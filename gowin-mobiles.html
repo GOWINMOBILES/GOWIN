@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gowin Mobiles – Job Manager</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f4f6fb;--card:#fff;--tx:#14182b;--mu:#667;--pr:#1f4fd8;--bd:#dde1ee;--ok:#15803d;--wn:#b45309;--er:#b91c1c}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1220;--card:#1a1e33;--tx:#eef;--mu:#9aa;--pr:#6b8cff;--bd:#2b3052;--ok:#4ade80;--wn:#fbbf24;--er:#f87171}}
+:root[data-theme="dark"]{--bg:#0f1220;--card:#1a1e33;--tx:#eef;--mu:#9aa;--pr:#6b8cff;--bd:#2b3052;--ok:#4ade80;--wn:#fbbf24;--er:#f87171}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,sans-serif;padding-bottom:70px}
+header{background:var(--pr);color:#fff;padding:12px 14px;font-weight:700;font-size:17px;display:flex;justify-content:space-between}
+main{padding:12px;max-width:640px;margin:auto}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:10px}
+input,select,textarea,button{font:inherit;width:100%;padding:10px;border-radius:8px;border:1px solid var(--bd);background:var(--card);color:var(--tx);margin:3px 0 8px}
+button{background:var(--pr);color:#fff;border:0;font-weight:600;cursor:pointer}
+button.g{background:transparent;color:var(--pr);border:1px solid var(--pr)}
+button.w{background:#16a34a}button.r{background:var(--er)}
+label{font-size:13px;color:var(--mu)}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.chk{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.chk label{display:flex;align-items:center;gap:6px;color:var(--tx);font-size:14px}
+.chk input{width:auto;margin:0}
+.tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600;border:1px solid currentColor}
+.Received{color:var(--pr)}.Progress{color:var(--wn)}.Ready{color:var(--ok)}.Delivered{color:var(--mu)}
+.alert{background:var(--wn);color:#fff;border-radius:10px;padding:10px;margin-bottom:10px}
+.ph{display:flex;gap:6px;flex-wrap:wrap}.ph img{width:70px;height:70px;object-fit:cover;border-radius:8px;border:1px solid var(--bd)}
+canvas{width:100%;height:120px;border:1px dashed var(--mu);border-radius:8px;background:#fff;touch-action:none}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav button{background:none;color:var(--tx);border:0;border-radius:0;margin:0}
+.sm{font-size:13px;color:var(--mu)}
+</style></head><body>
+<header><span>📱 GOWIN MOBILES</span><span id="cnt"></span></header>
+<main id="app"></main>
+<nav><button onclick="go('list')">📋 Jobs</button><button onclick="go('new')">➕ New Job</button><button onclick="go('set')">⚙️ Settings</button></nav>
+<script>
+const $=s=>document.querySelector(s),U=s=>String(s??'').toUpperCase(),N=v=>+v||0;
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const MO=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+const fd=v=>{const d=new Date(v);return`${d.getDate()}/${d.getMonth()+1}/${String(d.getFullYear()).slice(2)}`};
+const SN={Received:'RECEIVED',Progress:'IN PROGRESS',Ready:'READY',Delivered:'DELIVERED'};
+let jobs=[],pics={},set={fb:'',days:7,shop:'Gowin Mobiles',wd:90},cur={photos:[],idp:[],sig:''},view='list',filt='Active',q='',nt=0;
+const CK=['Screen crack','Body dent/scratch','Back glass crack','Buttons damaged','Camera damaged','Charging port loose','Display lines/spots','Speaker/Mic issue'];
+const LQ=['Liquid damage (water marks)','Liquid indicator red','Switch on aagala','Battery swollen'];
+const ACC=['SIM','Memory card','Battery','Cover','Charger'];
+const J=id=>jobs.find(x=>x.id==id);
+const bal=j=>N(j.total)-N(j.disc)-N(j.cash)-N(j.upi);
+function go(v,id){view=v;cur.id=id;render()}
+function img(f,max=560){return new Promise(r=>{const i=new Image,u=URL.createObjectURL(f);i.onload=()=>{const s=Math.min(1,max/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*s;c.height=i.height*s;c.getContext('2d').drawImage(i,0,0,c.width,c.height);r(c.toDataURL('image/jpeg',.6))};i.src=u})}
+async function addPh(el,key){for(const f of el.files)cur[key].push(await img(f));renderPh()}
+function renderPh(){['photos','idp'].forEach(k=>{const e=$('#'+k);if(e)e.innerHTML=cur[k].map(s=>`<img src="${s}">`).join('')})}
+function wa(j,t){const p=(j.phone||'').replace(/\D/g,'');window.open(`https://wa.me/${p.length==10?'91'+p:p}?text=${encodeURIComponent(t)}`,'_blank')}
+function sms(j,t){location.href=`sms:${j.phone}?body=${encodeURIComponent(t)}`}
+function msg(j,t){const s=set.shop;
+if(t=='new')return `Vanakkam ${j.name}, ${s}-la ungal ${j.model} receive pannom. Job Code: ${j.code}. Problem: ${j.problem}. Ready aanathum therivikkirom. 🙏`;
+if(t=='ready')return `Vanakkam ${j.name}, ungal ${j.model} (Job ${j.code}) READY ✅. Amount: ₹${N(j.total)-N(j.disc)}${N(j.cash)+N(j.upi)?` (Paid ₹${N(j.cash)+N(j.upi)}, Balance ₹${bal(j)})`:''}. Vanthu eduthukkonga. - ${s}`;
+return `Nandri ${j.name}! Ungal ${j.model} (Job ${j.code}) deliver aayiduchu.${j.warr?` 🛡️ ${set.wd} days warranty irukku (replaced part mattum).`:''} Feedback: ${set.fb||'(link set pannunga)'} - ${s} 🙏`}
+function sendBtns(j,t){return `<div class="row"><button class="w" onclick="wa(J(${j.id}),msg(J(${j.id}),'${t}'))">WhatsApp</button><button class="g" onclick="sms(J(${j.id}),msg(J(${j.id}),'${t}'))">SMS</button></div>`}
+function pend(){const n=Date.now();return jobs.filter(j=>j.status=='Ready'&&j.readyAt&&n-j.readyAt>set.days*864e5)}
+function render(){const a=$('#app');if(!ready)return;$('#cnt').textContent=jobs.filter(j=>j.status!='Delivered').length+' open ☁️';
+if(view=='list')return list(a);if(view=='new')return form(a);if(view=='det')return det(a);set_(a)}
+function list(a){const p=pend();
+let L=jobs.filter(j=>(filt=='Active'?j.status!='Delivered':filt=='All'||j.status==filt)&&(!q||(j.name+j.phone+j.code+j.model).toLowerCase().includes(q.toLowerCase())));
+a.innerHTML=(p.length?`<div class="alert">🔔 ${p.length} mobile ${set.days}+ days-a customer edukala:<br>${p.map(j=>`<b>${j.code}</b> ${esc(j.name)}`).join(', ')}<br><button class="g" style="background:#fff;margin-top:6px" onclick="remindAll()">Reminder send</button></div>`:'')+
+`<input id="sq" placeholder="🔍 Name / phone / job code" value="${esc(q)}" oninput="q=this.value;list($('#app'));$('#sq').focus()"><select onchange="filt=this.value;list($('#app'))">${['Active','All','Received','Progress','Ready','Delivered'].map(s=>`<option ${s==filt?'selected':''}>${s}</option>`).join('')}</select><button class="g" onclick="exp()">📊 Excel download (GOWIN SERVICE REPORT)</button>`+
+(L.map(j=>`<div class="card" onclick="go('det',${j.id})"><b>${j.code}</b> <span class="tag ${j.status}">${j.status}</span> ${j.warr?'🛡️':''}<br>${esc(j.name)} · ${esc(j.phone)}<br><span class="sm">${esc(j.model)} – ${esc(j.problem)}</span></div>`).join('')||'<p class="sm">Jobs illa. ➕ New Job click pannunga.</p>')}
+function remindAll(){const p=pend();if(!p.length)return;const j=p[0];wa(j,`Vanakkam ${j.name}, ungal ${j.model} (Job ${j.code}) ready-a irukku. Seekiram vanthu eduthukkonga. - ${set.shop}`);if(p.length>1)alert('Matha customers-ku job open panni send pannunga.')}
+function form(a){cur={photos:[],idp:[],sig:''};
+a.innerHTML=`<div class="card"><b>New Job</b><br><label>Customer name</label><input id="n"><label>Phone</label><input id="p" type="tel" maxlength="10">
+<div class="row"><div><label>Category</label><select id="cat"><option>SERVICE</option><option>ACCESSORIES</option></select></div><div><label>IMEI (optional)</label><input id="imei"></div></div>
+<label>Model (Brand + Model)</label><input id="m"><label>Problem</label><textarea id="pr" rows="2"></textarea>
+<label>Lock/Pattern (optional)</label><input id="lk">
+<div class="row"><div><label>Estimate ₹</label><input id="tt" type="number"></div><div><label>Advance ₹ (cash)</label><input id="ad" type="number"></div></div></div>
+<div class="card"><b>Physical condition ✔</b><div class="chk">${CK.map(c=>`<label><input type="checkbox" name="ck" value="${c}">${c}</label>`).join('')}</div>
+<b style="display:block;margin-top:8px">Liquid / Power ✔</b><div class="chk">${LQ.map(c=>`<label><input type="checkbox" name="ck" value="${c}">${c}</label>`).join('')}</div>
+<b style="display:block;margin-top:8px">Kudutha items ✔</b><div class="chk">${ACC.map(c=>`<label><input type="checkbox" name="ck" value="${c}">${c}</label>`).join('')}</div>
+<label style="margin-top:8px">📷 Device condition photos</label><input type="file" accept="image/*" capture="environment" multiple onchange="addPh(this,'photos')"><div class="ph" id="photos"></div></div>
+<div class="card"><b>🪪 ID proof (silla customers)</b><select id="it"><option>Aadhaar</option><option>Driving License</option><option>Voter ID</option><option>Other</option></select>
+<input type="file" accept="image/*" capture="environment" multiple onchange="addPh(this,'idp')"><div class="ph" id="idp"></div></div>
+<div class="card"><label style="color:var(--er);display:flex;gap:8px;align-items:flex-start"><input type="checkbox" id="dr" style="width:auto;margin-top:4px" onchange="$('#sg').style.display=this.checked?'block':'none'"><b>⚠️ Dead risk / data loss risk – repair panna device dead aagalaam. Shop responsible illa.</b></label>
+<div id="sg" style="display:none"><label>Customer signature (viralaala ezhuthunga)</label><canvas id="cv"></canvas><button class="g" onclick="clr()">Clear</button></div></div>
+<button id="cb" onclick="create()">✅ Create Job Code</button>`;sig()}
+function sig(){const c=$('#cv'),x=c.getContext('2d');c.width=c.offsetWidth||300;c.height=120;x.lineWidth=2;x.lineCap='round';let d=false;
+const pt=e=>{const r=c.getBoundingClientRect();return[(e.clientX-r.left)*c.width/r.width,(e.clientY-r.top)*c.height/r.height]};
+c.onpointerdown=e=>{d=true;x.beginPath();x.moveTo(...pt(e))};c.onpointermove=e=>{if(d){x.lineTo(...pt(e));x.stroke()}};c.onpointerup=()=>{d=false;cur.sig=c.toDataURL()}}
+function clr(){const c=$('#cv');c.getContext('2d').clearRect(0,0,c.width,c.height);cur.sig=''}
+async function create(){const g=id=>$('#'+id).value.trim();
+if(!g('n')||g('p').length<10)return alert('Name and 10-digit phone venum');
+const dr=$('#dr').checked;if(dr&&!cur.sig)return alert('Dead risk mention pannirukeenga – customer signature venum');
+$('#cb').disabled=true;const d=new Date(),pf=MO[d.getMonth()]+String(d.getFullYear()).slice(2);
+const n=jobs.filter(j=>j.code.startsWith(pf)).reduce((m,j)=>Math.max(m,+j.code.slice(5)||0),0)+1;
+const j={id:Date.now(),code:pf+String(n).padStart(3,'0'),name:g('n'),phone:g('p'),imei:g('imei'),cat:g('cat'),model:g('m'),problem:g('pr'),lock:g('lk'),total:N(g('tt')),disc:0,cash:N(g('ad')),upi:0,spare:0,work:'',warr:false,
+checks:[...document.querySelectorAll('[name=ck]:checked')].map(e=>e.value),idType:g('it'),dead:dr,status:'Received',date:d.toISOString(),readyAt:0,outAt:0};
+try{await put(j);await upPics(j.id,cur);delete pics[j.id];go('det',j.id)}catch(e){$('#cb').disabled=false;alert('Save aagala: '+(e.message||e.code))}}
+function det(a){const j=J(cur.id);if(!j)return go('list');if(!pics[j.id])loadPics(j.id);const P=pics[j.id]||[],sg=P.find(p=>p.kind=='sig');
+a.innerHTML=`<button class="g" onclick="go('list')">← Back</button><div class="card"><b style="font-size:18px">${j.code}</b> <span class="tag ${j.status}">${j.status}</span><br>
+<b>${esc(j.name)}</b> · <a href="tel:${esc(j.phone)}" style="color:var(--pr)">${esc(j.phone)}</a><br>${esc(j.cat)}: ${esc(j.model)} ${j.imei?'· IMEI '+esc(j.imei):''}<br>Problem: ${esc(j.problem)}${j.lock?'<br>Lock: '+esc(j.lock):''}<br>
+<span class="sm">${new Date(j.date).toLocaleString()}</span><br>${j.checks.map(c=>`✔ ${c}`).join('<br>')}
+${j.dead?'<p style="color:var(--er)"><b>⚠️ Dead risk accepted</b></p>'+(sg?`<img src="${sg.data}" style="height:60px;background:#fff;border-radius:6px">`:''):''}
+<div class="ph">${P.filter(p=>p.kind=='photo').map(p=>`<img src="${p.data}">`).join('')}</div>${P.some(p=>p.kind=='id')?`<p class="sm">ID: ${esc(j.idType)}</p><div class="ph">${P.filter(p=>p.kind=='id').map(p=>`<img src="${p.data}">`).join('')}</div>`:''}</div>
+<div class="card"><div class="row"><div><label>Price ₹</label><input type="number" value="${N(j.total)}" onchange="upd(${j.id},'total',+this.value)"></div><div><label>Discount ₹</label><input type="number" value="${N(j.disc)}" onchange="upd(${j.id},'disc',+this.value)"></div></div>
+<div class="row"><div><label>Cash ₹</label><input type="number" value="${N(j.cash)}" onchange="upd(${j.id},'cash',+this.value)"></div><div><label>UPI ₹</label><input type="number" value="${N(j.upi)}" onchange="upd(${j.id},'upi',+this.value)"></div></div>
+<div class="sm">Balance: <b>₹${bal(j)}</b></div>
+<label>Work done (DESCRIPTION)</label><input value="${esc(j.work)}" onchange="upd(${j.id},'work',this.value)">
+<label style="display:flex;gap:8px;align-items:center;color:var(--tx)"><input type="checkbox" style="width:auto;margin:0" ${j.warr?'checked':''} onchange="upd(${j.id},'warr',this.checked)">🛡️ ${set.wd} days warranty (W ${set.wd} DAYS)</label>
+<label style="margin-top:8px">🔒 Spare price ₹ (internal – PDF-la varaathu)</label><input type="number" value="${N(j.spare)}" onchange="upd(${j.id},'spare',+this.value)">
+<div class="sm">Profit (F): <b style="color:var(--ok)">₹${N(j.total)-N(j.spare)}</b></div></div>
+<div class="card"><b>Status</b><div class="row"><button class="g" onclick="st(${j.id},'Progress')">In Progress</button><button class="g" onclick="st(${j.id},'Ready')">Ready</button><button class="g" onclick="st(${j.id},'Delivered')">Delivered</button></div>
+<b>Send message</b><p class="sm">Job created:</p>${sendBtns(j,'new')}<p class="sm">Ready:</p>${sendBtns(j,'ready')}<p class="sm">Delivered + feedback:</p>${sendBtns(j,'del')}
+<button onclick="pdf(${j.id})">📄 PDF Invoice</button><button class="r" onclick="del(${j.id})">Delete</button></div>`}
+function upd(id,k,v){const j=J(id);j[k]=v;put(j)}
+function st(id,s){const j=J(id);j.status=s;if(s=='Ready')j.readyAt=Date.now();if(s=='Delivered')j.outAt=Date.now();put(j)}
+async function pdf(id){const j=J(id),{jsPDF}=window.jspdf,d=new jsPDF();let y=20;
+const L=(t,s=11,b)=>{d.setFontSize(s);d.setFont('helvetica',b?'bold':'normal');d.text(String(t),15,y);y+=s/2+3};
+L(set.shop.toUpperCase(),20,1);L('206, Kundrathur Main Rd, Kungumam Nagar,',10);L('Porur, Chennai-600116.',10);L('C.no: 9500977305',10);y+=4;L('SERVICE INVOICE',14,1);
+L(`Invoice/Job: ${j.code}     Date: ${fd(new Date())}`);L(`Customer: ${j.name}   Phone: ${j.phone}`);L(`Device: ${j.model}`);L(`Problem: ${j.problem}`);if(j.work)L(`Work done: ${j.work}`);y+=4;
+L(`Amount: Rs. ${N(j.total)}`,12,1);if(N(j.disc))L(`Discount: Rs. ${N(j.disc)}`);L(`Paid: Rs. ${N(j.cash)+N(j.upi)}`);L(`Balance: Rs. ${bal(j)}`,12,1);y+=4;
+if(j.warr){const e=new Date(j.outAt||Date.now());e.setDate(e.getDate()+N(set.wd));L(`Warranty: ${set.wd} days (valid till ${fd(e)}) - replaced part only`,11,1)}
+y+=2;L('Thank you for choosing '+set.shop+'!',10);L('Warranty does not cover physical/liquid damage after delivery.',9);
+const f=new File([d.output('blob')],`${j.code}-invoice.pdf`,{type:'application/pdf'});
+if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],text:'Invoice '+j.code});return}catch(e){}}
+d.save(f.name)}
+const desc=j=>(j.work||'')+(j.warr?` (W ${set.wd} DAYS)`:'');
+async function exp(){if(!window.XLSX)return;
+const H=['S.NO','DATE','JOB CODE','IMEI','CUSTOMER NAME','CONTACT NO','CATEGARY','MODEL','PROBLEM','PRICES','CASH','UPI','DISCOUNT','DESCRIPTION','STATUS','HANDOVER','SPARE','F'];
+const R=[...jobs].sort((a,b)=>a.date>b.date?1:-1).map((j,i)=>[i+1,fd(j.date),j.code,j.imei||'',U(j.name),j.phone,j.cat,U(j.model),U(j.problem),N(j.total),N(j.cash),N(j.upi),N(j.disc)||'',U(desc(j)),SN[j.status],j.outAt?fd(j.outAt):'',N(j.spare),N(j.total)-N(j.spare)]);
+const ws=XLSX.utils.aoa_to_sheet([H,...R]);ws['!cols']=[6,10,12,16,20,13,11,18,30,8,8,8,9,40,12,10,8,8].map(w=>({wch:w}));
+const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'SERVICE');
+const x=document.createElement('a');x.href=URL.createObjectURL(new Blob([XLSX.write(wb,{type:'array',bookType:'xlsx'})]));x.download='GOWIN SERVICE REPORT 2026.xlsx';x.click()}
+async function imp(el){const f=el.files[0];if(!f)return;const wb=XLSX.read(await f.arrayBuffer(),{cellDates:true}),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+const pd=v=>{if(v instanceof Date)return v.toISOString();const m=String(v).match(/(\d+)\/(\d+)\/(\d+)/);return m?new Date(2000+ +m[3],m[2]-1,+m[1],12).toISOString():new Date().toISOString()};
+const k=(r,a)=>{const x=Object.keys(r).find(c=>c.trim().toUpperCase()==a);return x?r[x]:''};
+const S={'DELIVERED':'Delivered','READY':'Ready','IN PROGRESS':'Progress'};let L=[];
+rows.forEach((r,i)=>{const code=String(k(r,'JOB CODE')).trim();if(!code||jobs.some(j=>j.code==code))return;const ds=String(k(r,'DESCRIPTION')),h=k(r,'HANDOVER');
+L.push({id:Date.now()+i,code,name:String(k(r,'CUSTOMER NAME')),phone:String(k(r,'CONTACT NO')),imei:String(k(r,'IMEI')),cat:String(k(r,'CATEGARY')||k(r,'CATEGORY')||'SERVICE'),model:String(k(r,'MODEL')),problem:String(k(r,'PROBLEM')),lock:'',total:N(k(r,'PRICES')),disc:N(k(r,'DISCOUNT')),cash:N(k(r,'CASH')),upi:N(k(r,'UPI')),spare:N(k(r,'SPARE')),work:ds.replace(/\(?\s*W 90 DAYS\s*\)?/i,'').trim(),warr:/W 90 DAYS/i.test(ds),checks:[],idType:'',dead:false,status:S[String(k(r,'STATUS')).trim().toUpperCase()]||'Received',date:pd(k(r,'DATE')),readyAt:0,outAt:h?+new Date(pd(h)):0})});
+if(L.length)try{await bulk(L)}catch(e){return alert(e.message)}
+alert(L.length+' jobs import aachu ✅');el.value=''}
+function set_(a){a.innerHTML=`<div class="card"><b>Settings</b><label>Shop name</label><input id="s1" value="${esc(set.shop)}"><label>Feedback link (Google review)</label><input id="s3" value="${esc(set.fb)}" placeholder="https://g.page/r/...">
+<div class="row"><div><label>Pickup reminder (days)</label><input id="s4" type="number" value="${set.days}"></div><div><label>Warranty (days)</label><input id="s5" type="number" value="${set.wd}"></div></div>
+<button onclick="set={shop:$('#s1').value,fb:$('#s3').value,days:+$('#s4').value||7,wd:+$('#s5').value||90};saveSet();alert('Saved');go('list')">Save</button></div>
+<div class="card"><b>📥 Pazhaya Excel import</b><p class="sm">GOWIN SERVICE REPORT .xlsx select pannunga – ellaa jobs-um inga varum (already irukkura job codes skip aagum).</p><input type="file" accept=".xlsx,.xls" onchange="imp(this)"></div>
+<a href="https://docs.google.com/spreadsheets/d/${SID}" target="_blank" style="color:var(--pr)">📄 Google Sheet open pannunga</a><p class="sm">☁️ Data Google Sheet + Drive-la save aagum. 20 sec-ku oru thadava sync aagum.</p>`}
+let ready=false,tok='',tex=0,tc=null,last='',SID=localStorage.gm_sid||'',FID=localStorage.gm_fid||'';
+const CID=()=>localStorage.gm_cid||'',SCOPE='https://www.googleapis.com/auth/drive.file',SH='https://sheets.googleapis.com/v4/spreadsheets/',DR='https://www.googleapis.com/drive/v3/files',JH={'Content-Type':'application/json'};
+const HDR=['S.NO','DATE','JOB CODE','IMEI','CUSTOMER NAME','CONTACT NO','CATEGARY','MODEL','PROBLEM','PRICES','CASH','UPI','DISCOUNT','DESCRIPTION','STATUS','HANDOVER','SPARE','F','APP DATA (touch pannaadheenga)'];
+function tk(){if(tok&&Date.now()<tex)return Promise.resolve(tok);return new Promise((res,rej)=>{tc.callback=r=>{if(r.error)return rej(r);tok=r.access_token;tex=Date.now()+r.expires_in*1000-60000;res(tok)};tc.error_callback=rej;tc.requestAccessToken({prompt:''})})}
+async function api(u,o={}){const r=await fetch(u,{...o,headers:{Authorization:'Bearer '+await tk(),...(o.headers||{})}});if(!r.ok)throw new Error((await r.text()).slice(0,200));return r}
+const rowv=(j,n)=>{const r={...j};delete r._row;return[n,fd(j.date),j.code,j.imei||'',U(j.name),j.phone,j.cat,U(j.model),U(j.problem),N(j.total),N(j.cash),N(j.upi),N(j.disc)||'',U(desc(j)),SN[j.status],j.outAt?fd(j.outAt):'',N(j.spare),N(j.total)-N(j.spare),JSON.stringify(r)]};
+const srt=()=>jobs.sort((a,b)=>a.date<b.date?1:-1);
+async function put(j){if(view!='new')render();try{
+if(j._row){const n=j._row;await api(`${SH}${SID}/values/SERVICE!A${n}:S${n}?valueInputOption=RAW`,{method:'PUT',headers:JH,body:JSON.stringify({values:[rowv(j,n-1)]})})}
+else{const r=await(await api(`${SH}${SID}/values/SERVICE!A1:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,{method:'POST',headers:JH,body:JSON.stringify({values:[rowv(j,jobs.length+1)]})})).json();j._row=+r.updates.updatedRange.match(/!A(\d+)/)[1];jobs.push(j);srt();if(view!='new')render()}
+}catch(e){alert('Save aagala: '+e.message)}}
+async function bulk(L){await api(`${SH}${SID}/values/SERVICE!A1:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,{method:'POST',headers:JH,body:JSON.stringify({values:L.map((j,i)=>rowv(j,jobs.length+1+i))})});await loadAll()}
+async function loadAll(){const r=await(await api(`${SH}${SID}/values/SERVICE!A2:S`)).json();
+const n=(r.values||[]).map((v,i)=>{try{const j=JSON.parse(v[18]);j._row=i+2;return j}catch(e){return null}}).filter(Boolean).sort((a,b)=>a.date<b.date?1:-1);
+const s=JSON.stringify(n);if(s!==last){last=s;jobs=n;if(view!='new'&&!document.activeElement?.matches('input,textarea,select'))render()}}
+async function saveSet(){try{await api(`${SH}${SID}/values/SETTINGS!A1?valueInputOption=RAW`,{method:'PUT',headers:JH,body:JSON.stringify({values:[[JSON.stringify(set)]]})})}catch(e){alert(e.message)}}
+async function fold(){if(FID)return FID;const q=encodeURIComponent("name='GOWIN PHOTOS' and mimeType='application/vnd.google-apps.folder' and trashed=false"),f=(await(await api(`${DR}?q=${q}&fields=files(id)`)).json()).files;
+FID=f.length?f[0].id:(await(await api(DR,{method:'POST',headers:JH,body:JSON.stringify({name:'GOWIN PHOTOS',mimeType:'application/vnd.google-apps.folder'})})).json()).id;localStorage.gm_fid=FID;return FID}
+async function upOne(id,kind,i,data){const fm=new FormData();fm.append('metadata',new Blob([JSON.stringify({name:`${id}_${kind}_${i}.jpg`,parents:[await fold()],appProperties:{job:String(id),kind}})],{type:'application/json'}));fm.append('file',await(await fetch(data)).blob());await api('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{method:'POST',body:fm})}
+async function upPics(id,c){let i=0;for(const s of c.photos)await upOne(id,'photo',i++,s);for(const s of c.idp)await upOne(id,'id',i++,s);if(c.sig)await upOne(id,'sig',0,c.sig)}
+const pq=id=>`${DR}?fields=files(id,appProperties)&q=`+encodeURIComponent(`appProperties has { key='job' and value='${id}' } and trashed=false`);
+async function loadPics(id){pics[id]=[];try{const f=(await(await api(pq(id))).json()).files||[],o=[];for(const x of f)o.push({kind:x.appProperties.kind,data:URL.createObjectURL(await(await api(`${DR}/${x.id}?alt=media`)).blob())});pics[id]=o;if(view=='det'&&cur.id==id)render()}catch(e){}}
+async function del(id){if(!confirm('Delete job?'))return;const j=J(id);try{const m=await(await api(`${SH}${SID}?fields=sheets.properties`)).json(),sid=m.sheets.find(s=>s.properties.title=='SERVICE').properties.sheetId;
+await api(`${SH}${SID}:batchUpdate`,{method:'POST',headers:JH,body:JSON.stringify({requests:[{deleteDimension:{range:{sheetId:sid,dimension:'ROWS',startIndex:j._row-1,endIndex:j._row}}}]})});
+for(const x of(await(await api(pq(id))).json()).files||[])await api(`${DR}/${x.id}`,{method:'DELETE'})}catch(e){alert(e.message)}go('list');loadAll()}
+async function boot(){if(!SID){const q=encodeURIComponent("name='GOWIN SERVICE REPORT 2026' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false"),f=(await(await api(`${DR}?q=${q}&fields=files(id)`)).json()).files;
+if(f.length)SID=f[0].id;else{SID=(await(await api(SH.slice(0,-1),{method:'POST',headers:JH,body:JSON.stringify({properties:{title:'GOWIN SERVICE REPORT 2026'},sheets:[{properties:{title:'SERVICE'}},{properties:{title:'SETTINGS'}}]})})).json()).spreadsheetId;
+await api(`${SH}${SID}/values/SERVICE!A1:S1?valueInputOption=RAW`,{method:'PUT',headers:JH,body:JSON.stringify({values:[HDR]})})}localStorage.gm_sid=SID}
+try{const s=await(await api(`${SH}${SID}/values/SETTINGS!A1`)).json();if(s.values)set={...set,...JSON.parse(s.values[0][0])}}catch(e){}
+await loadAll();ready=true;render();setInterval(()=>loadAll().catch(()=>{}),20000);
+try{if(pend().length)Notification.requestPermission().then(p=>{if(p=='granted')new Notification('Gowin Mobiles',{body:pend().length+' mobile pending pickup'})})}catch(e){}}
+async function signin(){try{tc=google.accounts.oauth2.initTokenClient({client_id:CID(),scope:SCOPE,callback:()=>{}});await tk();await boot()}catch(e){alert('Sign in failed: '+(e.message||e.error||e.type||'try again'))}}
+function gate(){$('#app').innerHTML=CID()?`<div class="card"><b>📱 Gowin Mobiles</b><p class="sm">Google account-la sign in pannunga. Phone & PC rendulaiyum same account use pannunga.</p><button onclick="signin()">🔐 Sign in with Google</button><button class="g" onclick="localStorage.removeItem('gm_cid');gate()">Client ID maathanum</button></div>`:`<div class="card"><b>Setup (oru thadava)</b><p class="sm">Google Cloud-la create panna OAuth Client ID inga paste pannunga.</p><input id="cid" placeholder="xxxx.apps.googleusercontent.com"><button onclick="localStorage.gm_cid=$('#cid').value.trim();gate()">Save</button></div>`}
+gate();
+</script></body></html>
