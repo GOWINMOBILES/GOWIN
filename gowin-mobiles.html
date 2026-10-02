@@ -46,17 +46,23 @@ const CK=['Screen crack','Body dent/scratch','Back glass crack','Buttons damaged
 const LQ=['Liquid damage (water marks)','Liquid indicator red','Switch on aagala','Battery swollen'];
 const ACC=['SIM','Memory card','Battery','Cover','Charger'];
 const J=id=>jobs.find(x=>x.id==id);
-const bal=j=>N(j.total)-N(j.disc)-N(j.cash)-N(j.upi);
+const wdy=j=>j.wdays!=null?j.wdays:(j.warr?(set.wd||90):0);
+const accT=j=>(j.acc||[]).reduce((s,x)=>s+N(x.p),0),tmpT=j=>j.tmp=='paid'?N(j.tmpP):0;
+const grand=j=>N(j.total)+tmpT(j)+accT(j),bal=j=>grand(j)-N(j.disc)-N(j.cash)-N(j.upi);
+const wEnd=j=>{const e=new Date(j.outAt||Date.now());e.setDate(e.getDate()+wdy(j));return fd(e)};
+const dtxt=j=>j.tmp=='free'?(N(j.tmpQ)>1?N(j.tmpQ)+' ':'')+'TEMPER':(N(j.disc)||'');
+const bill=j=>[N(j.total)?`சர்வீஸ் / Service: ₹${N(j.total)}`:'',j.tmp?`டெம்பர் / Temper${N(j.tmpQ)>1?' x'+N(j.tmpQ):''}: ${j.tmp=='free'?'FREE / இலவசம்':'₹'+tmpT(j)}`:'',...(j.acc||[]).map(x=>`${x.n}: ₹${N(x.p)}`),N(j.disc)?`தள்ளுபடி / Discount: ₹${N(j.disc)}`:''].filter(Boolean).join('\n');
+
 function go(v,id){view=v;cur.id=id;render()}
 function img(f,max=560){return new Promise(r=>{const i=new Image,u=URL.createObjectURL(f);i.onload=()=>{const s=Math.min(1,max/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*s;c.height=i.height*s;c.getContext('2d').drawImage(i,0,0,c.width,c.height);r(c.toDataURL('image/jpeg',.6))};i.src=u})}
 async function addPh(el,key){for(const f of el.files)cur[key].push(await img(f));renderPh()}
 function renderPh(){['photos','idp'].forEach(k=>{const e=$('#'+k);if(e)e.innerHTML=cur[k].map(s=>`<img src="${s}">`).join('')})}
 function wa(j,t){const p=(j.phone||'').replace(/\D/g,'');window.open(`https://wa.me/${p.length==10?'91'+p:p}?text=${encodeURIComponent(t)}`,'_blank')}
 function sms(j,t){location.href=`sms:${j.phone}?body=${encodeURIComponent(t)}`}
-function msg(j,t){const s=set.shop;
-if(t=='new')return `Vanakkam ${j.name}, ${s}-la ungal ${j.model} receive pannom. Job Code: ${j.code}. Problem: ${j.problem}. Ready aanathum therivikkirom. 🙏`;
-if(t=='ready')return `Vanakkam ${j.name}, ungal ${j.model} (Job ${j.code}) READY ✅. Amount: ₹${N(j.total)-N(j.disc)}${N(j.cash)+N(j.upi)?` (Paid ₹${N(j.cash)+N(j.upi)}, Balance ₹${bal(j)})`:''}. Vanthu eduthukkonga. - ${s}`;
-return `Nandri ${j.name}! Ungal ${j.model} (Job ${j.code}) deliver aayiduchu.${j.warr?` 🛡️ ${set.wd} days warranty irukku (replaced part mattum).`:''} Feedback: ${set.fb||'(link set pannunga)'} - ${s} 🙏`}
+function msg(j,t){const s=set.shop,n=j.name,m=j.model,c=j.code,pd=N(j.cash)+N(j.upi),tot=grand(j)-N(j.disc),w=wdy(j);
+if(t=='new')return `வணக்கம் ${n},\n${s}-ல் உங்கள் ${m} பெறப்பட்டது.\nஜாப் கோடு: ${c}\nபிரச்சனை: ${j.problem}\nதயாரானதும் உங்களுக்குத் தெரிவிக்கிறோம். நன்றி 🙏\n\nHello ${n},\nWe have received your ${m} at ${s}.\nJob Code: ${c}\nIssue: ${j.problem}\nWe will inform you once it is ready. Thank you 🙏`;
+if(t=='ready')return `வணக்கம் ${n},\nஉங்கள் ${m} (ஜாப் ${c}) தயாராக உள்ளது ✅\n${bill(j)}\nமொத்தம்: ₹${tot}${pd?`\nசெலுத்தியது: ₹${pd}\nமீதம்: ₹${bal(j)}`:''}\nதயவுசெய்து வந்து பெற்றுக்கொள்ளவும். - ${s}\n\nHello ${n},\nYour ${m} (Job ${c}) is READY ✅\n${bill(j)}\nTotal: ₹${tot}${pd?`\nPaid: ₹${pd}\nBalance: ₹${bal(j)}`:''}\nPlease collect it at your convenience. - ${s}`;
+return `நன்றி ${n}! 🙏\nஉங்கள் ${m} (ஜாப் ${c}) ஒப்படைக்கப்பட்டது.${w?`\n🛡️ மாற்றிய ${j.part||'பாகத்திற்கு'} ${w} நாட்கள் வாரண்டி (${wEnd(j)} வரை). உடைவு / தண்ணீர் சேதம் வாரண்டியில் வராது.`:''}${set.fb?`\nஉங்கள் கருத்தைப் பகிரவும்: ${set.fb}`:''}\n- ${s}\n\nThank you ${n}! 🙏\nYour ${m} (Job ${c}) has been delivered.${w?`\n🛡️ ${w}-day warranty on the replaced ${j.part||'part'}, valid till ${wEnd(j)}. Physical / liquid damage is not covered.`:''}${set.fb?`\nPlease share your feedback: ${set.fb}`:''}\n- ${s}`}
 function sendBtns(j,t){return `<div class="row"><button class="w" onclick="wa(J(${j.id}),msg(J(${j.id}),'${t}'))">WhatsApp</button><button class="g" onclick="sms(J(${j.id}),msg(J(${j.id}),'${t}'))">SMS</button></div>`}
 function pend(){const n=Date.now();return jobs.filter(j=>j.status=='Ready'&&j.readyAt&&n-j.readyAt>set.days*864e5)}
 function render(){const a=$('#app');if(!ready)return;$('#cnt').textContent=jobs.filter(j=>j.status!='Delivered').length+' open ☁️';
@@ -65,7 +71,7 @@ function list(a){const p=pend();
 let L=jobs.filter(j=>(filt=='Active'?j.status!='Delivered':filt=='All'||j.status==filt)&&(!q||(j.name+j.phone+j.code+j.model).toLowerCase().includes(q.toLowerCase())));
 a.innerHTML=(p.length?`<div class="alert">🔔 ${p.length} mobile ${set.days}+ days-a customer edukala:<br>${p.map(j=>`<b>${j.code}</b> ${esc(j.name)}`).join(', ')}<br><button class="g" style="background:#fff;margin-top:6px" onclick="remindAll()">Reminder send</button></div>`:'')+
 `<input id="sq" placeholder="🔍 Name / phone / job code" value="${esc(q)}" oninput="q=this.value;list($('#app'));$('#sq').focus()"><select onchange="filt=this.value;list($('#app'))">${['Active','All','Received','Progress','Ready','Delivered'].map(s=>`<option ${s==filt?'selected':''}>${s}</option>`).join('')}</select><button class="g" onclick="exp()">📊 Excel download (GOWIN SERVICE REPORT)</button>`+
-(L.map(j=>`<div class="card" onclick="go('det',${j.id})"><b>${j.code}</b> <span class="tag ${j.status}">${j.status}</span> ${j.warr?'🛡️':''}<br>${esc(j.name)} · ${esc(j.phone)}<br><span class="sm">${esc(j.model)} – ${esc(j.problem)}</span></div>`).join('')||'<p class="sm">Jobs illa. ➕ New Job click pannunga.</p>')}
+(L.map(j=>`<div class="card" onclick="go('det',${j.id})"><b>${j.code}</b> <span class="tag ${j.status}">${j.status}</span> ${wdy(j)?'🛡️':''}<br>${esc(j.name)} · ${esc(j.phone)}<br><span class="sm">${esc(j.model)} – ${esc(j.problem)}</span></div>`).join('')||'<p class="sm">Jobs illa. ➕ New Job click pannunga.</p>')}
 function remindAll(){const p=pend();if(!p.length)return;const j=p[0];wa(j,`Vanakkam ${j.name}, ungal ${j.model} (Job ${j.code}) ready-a irukku. Seekiram vanthu eduthukkonga. - ${set.shop}`);if(p.length>1)alert('Matha customers-ku job open panni send pannunga.')}
 function form(a){cur={photos:[],idp:[],sig:''};
 a.innerHTML=`<div class="card"><b>New Job</b><br><label>Customer name</label><input id="n"><label>Phone</label><input id="p" type="tel" maxlength="10">
@@ -100,13 +106,18 @@ a.innerHTML=`<button class="g" onclick="go('list')">← Back</button><div class=
 <span class="sm">${new Date(j.date).toLocaleString()}</span><br>${j.checks.map(c=>`✔ ${c}`).join('<br>')}
 ${j.dead?'<p style="color:var(--er)"><b>⚠️ Dead risk accepted</b></p>'+(sg?`<img src="${sg.data}" style="height:60px;background:#fff;border-radius:6px">`:''):''}
 <div class="ph">${P.filter(p=>p.kind=='photo').map(p=>`<img src="${p.data}">`).join('')}</div>${P.some(p=>p.kind=='id')?`<p class="sm">ID: ${esc(j.idType)}</p><div class="ph">${P.filter(p=>p.kind=='id').map(p=>`<img src="${p.data}">`).join('')}</div>`:''}</div>
-<div class="card"><div class="row"><div><label>Price ₹</label><input type="number" value="${N(j.total)}" onchange="upd(${j.id},'total',+this.value)"></div><div><label>Discount ₹</label><input type="number" value="${N(j.disc)}" onchange="upd(${j.id},'disc',+this.value)"></div></div>
-<div class="row"><div><label>Cash ₹</label><input type="number" value="${N(j.cash)}" onchange="upd(${j.id},'cash',+this.value)"></div><div><label>UPI ₹</label><input type="number" value="${N(j.upi)}" onchange="upd(${j.id},'upi',+this.value)"></div></div>
-<div class="sm">Balance: <b>₹${bal(j)}</b></div>
+<div class="card"><b>💰 Billing</b><div class="row"><div><label>Repair price ₹</label><input type="number" value="${N(j.total)}" onchange="upd(${j.id},'total',+this.value)"></div><div><label>Discount ₹</label><input type="number" value="${N(j.disc)}" onchange="upd(${j.id},'disc',+this.value)"></div></div>
 <label>Work done (DESCRIPTION)</label><input value="${esc(j.work)}" onchange="upd(${j.id},'work',this.value)">
-<label style="display:flex;gap:8px;align-items:center;color:var(--tx)"><input type="checkbox" style="width:auto;margin:0" ${j.warr?'checked':''} onchange="upd(${j.id},'warr',this.checked)">🛡️ ${set.wd} days warranty (W ${set.wd} DAYS)</label>
+<label>🔧 Spare changed (part name)</label><input value="${esc(j.part)}" placeholder="Display / Battery..." onchange="upd(${j.id},'part',this.value)">
+<label>🛡️ Spare warranty</label><select onchange="upd(${j.id},'wdays',+this.value)">${[[0,'No warranty'],[90,'90 days'],[180,'180 days']].map(o=>`<option value="${o[0]}" ${wdy(j)==o[0]?'selected':''}>${o[1]}</option>`).join('')}</select>
+<label>🛡️ Temper glass</label><select onchange="upd(${j.id},'tmp',this.value)">${[['','No temper'],['free','Free (இலவசம்)'],['paid','Cost (paid)']].map(o=>`<option value="${o[0]}" ${(j.tmp||'')==o[0]?'selected':''}>${o[1]}</option>`).join('')}</select>
+${j.tmp?`<div class="row"><div><label>Temper qty</label><input type="number" value="${j.tmpQ||1}" onchange="upd(${j.id},'tmpQ',+this.value)"></div>${j.tmp=='paid'?`<div><label>Temper price ₹</label><input type="number" value="${N(j.tmpP)}" onchange="upd(${j.id},'tmpP',+this.value)"></div>`:''}</div>`:''}
+<label>🎧 Accessories sale</label>${(j.acc||[]).map((x,i)=>`<div class="row" style="align-items:center"><span>${esc(x.n)} – ₹${N(x.p)}</span><button class="g" style="flex:0 0 60px" onclick="delAcc(${j.id},${i})">✕</button></div>`).join('')}
+<div class="row"><input id="an" placeholder="Item (cable, case...)"><input id="ap" type="number" placeholder="₹ price"></div><button class="g" onclick="addAcc(${j.id})">➕ Add accessory</button>
+<div class="row"><div><label>Cash ₹</label><input type="number" value="${N(j.cash)}" onchange="upd(${j.id},'cash',+this.value)"></div><div><label>UPI ₹</label><input type="number" value="${N(j.upi)}" onchange="upd(${j.id},'upi',+this.value)"></div></div>
+<div class="sm">Total: <b>₹${grand(j)-N(j.disc)}</b> · Balance: <b>₹${bal(j)}</b></div>
 <label style="margin-top:8px">🔒 Spare price ₹ (internal – PDF-la varaathu)</label><input type="number" value="${N(j.spare)}" onchange="upd(${j.id},'spare',+this.value)">
-<div class="sm">Profit (F): <b style="color:var(--ok)">₹${N(j.total)-N(j.spare)}</b></div></div>
+<div class="sm">Profit (F): <b style="color:var(--ok)">₹${grand(j)-N(j.disc)-N(j.spare)}</b></div></div>
 <div class="card"><b>Status</b><div class="row"><button class="g" onclick="st(${j.id},'Progress')">In Progress</button><button class="g" onclick="st(${j.id},'Ready')">Ready</button><button class="g" onclick="st(${j.id},'Delivered')">Delivered</button></div>
 <b>Send message</b><p class="sm">Job created:</p>${sendBtns(j,'new')}<p class="sm">Ready:</p>${sendBtns(j,'ready')}<p class="sm">Delivered + feedback:</p>${sendBtns(j,'del')}
 <button onclick="pdf(${j.id})">📄 PDF Invoice</button><button class="r" onclick="del(${j.id})">Delete</button></div>`}
@@ -116,16 +127,18 @@ async function pdf(id){const j=J(id),{jsPDF}=window.jspdf,d=new jsPDF();let y=20
 const L=(t,s=11,b)=>{d.setFontSize(s);d.setFont('helvetica',b?'bold':'normal');d.text(String(t),15,y);y+=s/2+3};
 L(set.shop.toUpperCase(),20,1);L('206, Kundrathur Main Rd, Kungumam Nagar,',10);L('Porur, Chennai-600116.',10);L('C.no: 9500977305',10);y+=4;L('SERVICE INVOICE',14,1);
 L(`Invoice/Job: ${j.code}     Date: ${fd(new Date())}`);L(`Customer: ${j.name}   Phone: ${j.phone}`);L(`Device: ${j.model}`);L(`Problem: ${j.problem}`);if(j.work)L(`Work done: ${j.work}`);y+=4;
-L(`Amount: Rs. ${N(j.total)}`,12,1);if(N(j.disc))L(`Discount: Rs. ${N(j.disc)}`);L(`Paid: Rs. ${N(j.cash)+N(j.upi)}`);L(`Balance: Rs. ${bal(j)}`,12,1);y+=4;
-if(j.warr){const e=new Date(j.outAt||Date.now());e.setDate(e.getDate()+N(set.wd));L(`Warranty: ${set.wd} days (valid till ${fd(e)}) - replaced part only`,11,1)}
+if(N(j.total))L(`Service/Repair: Rs. ${N(j.total)}`);if(j.tmp)L(`Temper glass${N(j.tmpQ)>1?' x'+N(j.tmpQ):''}: ${j.tmp=='free'?'FREE':'Rs. '+tmpT(j)}`);(j.acc||[]).forEach(x=>L(`${x.n}: Rs. ${N(x.p)}`));if(N(j.disc))L(`Discount: Rs. ${N(j.disc)}`);
+L(`Total: Rs. ${grand(j)-N(j.disc)}`,12,1);L(`Paid: Rs. ${N(j.cash)+N(j.upi)}`);L(`Balance: Rs. ${bal(j)}`,12,1);y+=4;
+if(wdy(j))L(`Warranty: ${wdy(j)} days on ${j.part||'replaced part'} (valid till ${wEnd(j)})`,11,1);
 y+=2;L('Thank you for choosing '+set.shop+'!',10);L('Warranty does not cover physical/liquid damage after delivery.',9);
 const f=new File([d.output('blob')],`${j.code}-invoice.pdf`,{type:'application/pdf'});
 if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],text:'Invoice '+j.code});return}catch(e){}}
 d.save(f.name)}
-const desc=j=>(j.work||'')+(j.warr?` (W ${set.wd} DAYS)`:'');
+const desc=j=>[j.work||'',j.tmp=='paid'?'+ TEMPER':'',...(j.acc||[]).map(x=>'+ '+x.n),wdy(j)?`(W ${wdy(j)} DAYS)`:''].filter(Boolean).join(' ');
+
 async function exp(){if(!window.XLSX)return;
 const H=['S.NO','DATE','JOB CODE','IMEI','CUSTOMER NAME','CONTACT NO','CATEGARY','MODEL','PROBLEM','PRICES','CASH','UPI','DISCOUNT','DESCRIPTION','STATUS','HANDOVER','SPARE','F'];
-const R=[...jobs].sort((a,b)=>a.date>b.date?1:-1).map((j,i)=>[i+1,fd(j.date),j.code,j.imei||'',U(j.name),j.phone,j.cat,U(j.model),U(j.problem),N(j.total),N(j.cash),N(j.upi),N(j.disc)||'',U(desc(j)),SN[j.status],j.outAt?fd(j.outAt):'',N(j.spare),N(j.total)-N(j.spare)]);
+const R=[...jobs].sort((a,b)=>a.date>b.date?1:-1).map((j,i)=>[i+1,fd(j.date),j.code,j.imei||'',U(j.name),j.phone,j.cat,U(j.model),U(j.problem),grand(j),N(j.cash),N(j.upi),dtxt(j),U(desc(j)),SN[j.status],j.outAt?fd(j.outAt):'',N(j.spare),grand(j)-N(j.disc)-N(j.spare)]);
 const ws=XLSX.utils.aoa_to_sheet([H,...R]);ws['!cols']=[6,10,12,16,20,13,11,18,30,8,8,8,9,40,12,10,8,8].map(w=>({wch:w}));
 const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'SERVICE');
 const x=document.createElement('a');x.href=URL.createObjectURL(new Blob([XLSX.write(wb,{type:'array',bookType:'xlsx'})]));x.download='GOWIN SERVICE REPORT 2026.xlsx';x.click()}
@@ -134,7 +147,7 @@ const pd=v=>{if(v instanceof Date)return v.toISOString();const m=String(v).match
 const k=(r,a)=>{const x=Object.keys(r).find(c=>c.trim().toUpperCase()==a);return x?r[x]:''};
 const S={'DELIVERED':'Delivered','READY':'Ready','IN PROGRESS':'Progress'};let L=[];
 rows.forEach((r,i)=>{const code=String(k(r,'JOB CODE')).trim();if(!code||jobs.some(j=>j.code==code))return;const ds=String(k(r,'DESCRIPTION')),h=k(r,'HANDOVER');
-L.push({id:Date.now()+i,code,name:String(k(r,'CUSTOMER NAME')),phone:String(k(r,'CONTACT NO')),imei:String(k(r,'IMEI')),cat:String(k(r,'CATEGARY')||k(r,'CATEGORY')||'SERVICE'),model:String(k(r,'MODEL')),problem:String(k(r,'PROBLEM')),lock:'',total:N(k(r,'PRICES')),disc:N(k(r,'DISCOUNT')),cash:N(k(r,'CASH')),upi:N(k(r,'UPI')),spare:N(k(r,'SPARE')),work:ds.replace(/\(?\s*W 90 DAYS\s*\)?/i,'').trim(),warr:/W 90 DAYS/i.test(ds),checks:[],idType:'',dead:false,status:S[String(k(r,'STATUS')).trim().toUpperCase()]||'Received',date:pd(k(r,'DATE')),readyAt:0,outAt:h?+new Date(pd(h)):0})});
+L.push({id:Date.now()+i,code,name:String(k(r,'CUSTOMER NAME')),phone:String(k(r,'CONTACT NO')),imei:String(k(r,'IMEI')),cat:String(k(r,'CATEGARY')||k(r,'CATEGORY')||'SERVICE'),model:String(k(r,'MODEL')),problem:String(k(r,'PROBLEM')),lock:'',total:N(k(r,'PRICES')),disc:N(k(r,'DISCOUNT')),tmp:/TEMPER/i.test(String(k(r,'DISCOUNT')))?'free':'',tmpQ:+((String(k(r,'DISCOUNT')).match(/^(\d+)\s*TEMPER/i)||[0,1])[1]),cash:N(k(r,'CASH')),upi:N(k(r,'UPI')),spare:N(k(r,'SPARE')),work:ds.replace(/\(?\s*W (90|180) DAYS\s*\)?/i,'').trim(),wdays:/W 180 DAYS/i.test(ds)?180:/W 90 DAYS/i.test(ds)?90:0,checks:[],idType:'',dead:false,status:S[String(k(r,'STATUS')).trim().toUpperCase()]||'Received',date:pd(k(r,'DATE')),readyAt:0,outAt:h?+new Date(pd(h)):0})});
 if(L.length)try{await bulk(L)}catch(e){return alert(e.message)}
 alert(L.length+' jobs import aachu ✅');el.value=''}
 function set_(a){a.innerHTML=`<div class="card"><b>Settings</b><label>Shop name</label><input id="s1" value="${esc(set.shop)}"><label>Feedback link (Google review)</label><input id="s3" value="${esc(set.fb)}" placeholder="https://g.page/r/...">
@@ -147,7 +160,7 @@ const CID=()=>localStorage.gm_cid||'',SCOPE='https://www.googleapis.com/auth/dri
 const HDR=['S.NO','DATE','JOB CODE','IMEI','CUSTOMER NAME','CONTACT NO','CATEGARY','MODEL','PROBLEM','PRICES','CASH','UPI','DISCOUNT','DESCRIPTION','STATUS','HANDOVER','SPARE','F','APP DATA (touch pannaadheenga)'];
 function tk(){if(tok&&Date.now()<tex)return Promise.resolve(tok);return new Promise((res,rej)=>{tc.callback=r=>{if(r.error)return rej(r);tok=r.access_token;tex=Date.now()+r.expires_in*1000-60000;res(tok)};tc.error_callback=rej;tc.requestAccessToken({prompt:''})})}
 async function api(u,o={}){const r=await fetch(u,{...o,headers:{Authorization:'Bearer '+await tk(),...(o.headers||{})}});if(!r.ok)throw new Error((await r.text()).slice(0,200));return r}
-const rowv=(j,n)=>{const r={...j};delete r._row;return[n,fd(j.date),j.code,j.imei||'',U(j.name),j.phone,j.cat,U(j.model),U(j.problem),N(j.total),N(j.cash),N(j.upi),N(j.disc)||'',U(desc(j)),SN[j.status],j.outAt?fd(j.outAt):'',N(j.spare),N(j.total)-N(j.spare),JSON.stringify(r)]};
+const rowv=(j,n)=>{const r={...j};delete r._row;return[n,fd(j.date),j.code,j.imei||'',U(j.name),j.phone,j.cat,U(j.model),U(j.problem),grand(j),N(j.cash),N(j.upi),dtxt(j),U(desc(j)),SN[j.status],j.outAt?fd(j.outAt):'',N(j.spare),grand(j)-N(j.disc)-N(j.spare),JSON.stringify(r)]};
 const srt=()=>jobs.sort((a,b)=>a.date<b.date?1:-1);
 async function put(j){if(view!='new')render();try{
 if(j._row){const n=j._row;await api(`${SH}${SID}/values/SERVICE!A${n}:S${n}?valueInputOption=RAW`,{method:'PUT',headers:JH,body:JSON.stringify({values:[rowv(j,n-1)]})})}
@@ -167,6 +180,8 @@ async function loadPics(id){pics[id]=[];try{const f=(await(await api(pq(id))).js
 async function del(id){if(!confirm('Delete job?'))return;const j=J(id);try{const m=await(await api(`${SH}${SID}?fields=sheets.properties`)).json(),sid=m.sheets.find(s=>s.properties.title=='SERVICE').properties.sheetId;
 await api(`${SH}${SID}:batchUpdate`,{method:'POST',headers:JH,body:JSON.stringify({requests:[{deleteDimension:{range:{sheetId:sid,dimension:'ROWS',startIndex:j._row-1,endIndex:j._row}}}]})});
 for(const x of(await(await api(pq(id))).json()).files||[])await api(`${DR}/${x.id}`,{method:'DELETE'})}catch(e){alert(e.message)}go('list');loadAll()}
+function addAcc(id){const n=$('#an').value.trim(),p=N($('#ap').value);if(!n)return alert('Item name enter pannunga');const j=J(id);j.acc=[...(j.acc||[]),{n,p}];put(j)}
+function delAcc(id,i){const j=J(id);j.acc=j.acc.filter((_,k)=>k!=i);put(j)}
 async function boot(){if(!SID){const q=encodeURIComponent("name='GOWIN SERVICE REPORT 2026' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false"),f=(await(await api(`${DR}?q=${q}&fields=files(id)`)).json()).files;
 if(f.length)SID=f[0].id;else{SID=(await(await api(SH.slice(0,-1),{method:'POST',headers:JH,body:JSON.stringify({properties:{title:'GOWIN SERVICE REPORT 2026'},sheets:[{properties:{title:'SERVICE'}},{properties:{title:'SETTINGS'}}]})})).json()).spreadsheetId;
 await api(`${SH}${SID}/values/SERVICE!A1:S1?valueInputOption=RAW`,{method:'PUT',headers:JH,body:JSON.stringify({values:[HDR]})})}localStorage.gm_sid=SID}
