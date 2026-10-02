@@ -188,7 +188,42 @@ await api(`${SH}${SID}/values/SERVICE!A1:S1?valueInputOption=RAW`,{method:'PUT',
 try{const s=await(await api(`${SH}${SID}/values/SETTINGS!A1`)).json();if(s.values)set={...set,...JSON.parse(s.values[0][0])}}catch(e){}
 await loadAll();ready=true;render();setInterval(()=>loadAll().catch(()=>{}),20000);
 try{if(pend().length)Notification.requestPermission().then(p=>{if(p=='granted')new Notification('Gowin Mobiles',{body:pend().length+' mobile pending pickup'})})}catch(e){}}
-async function signin(){try{tc=google.accounts.oauth2.initTokenClient({client_id:CID(),scope:SCOPE,callback:()=>{}});await tk();await boot()}catch(e){alert('Sign in failed: '+(e.message||e.error||e.type||'try again'))}}
-function gate(){$('#app').innerHTML=CID()?`<div class="card"><b>📱 Gowin Mobiles</b><p class="sm">Google account-la sign in pannunga. Phone & PC rendulaiyum same account use pannunga.</p><button onclick="signin()">🔐 Sign in with Google</button><button class="g" onclick="localStorage.removeItem('gm_cid');gate()">Client ID maathanum</button></div>`:`<div class="card"><b>Setup (oru thadava)</b><p class="sm">Google Cloud-la create panna OAuth Client ID inga paste pannunga.</p><input id="cid" placeholder="xxxx.apps.googleusercontent.com"><button onclick="localStorage.gm_cid=$('#cid').value.trim();gate()">Save</button></div>`}
+async function signin(){
+try{
+  if(!window.google||!google.accounts||!google.accounts.oauth2)
+    throw new Error('Google Sign-In library load aagala. Internet connection check pannunga.');
+
+  /* Android / multiple Google accounts:
+     Always ask Google to show the account chooser on a fresh sign-in.
+     PC flow otherwise remains unchanged. */
+  tok=''; tex=0;
+  tc=google.accounts.oauth2.initTokenClient({
+    client_id:CID(),
+    scope:SCOPE,
+    callback:()=>{}
+  });
+
+  tc.callback=async r=>{
+    if(r.error){
+      alert('Google login failed: '+(r.error_description||r.error));
+      return;
+    }
+    tok=r.access_token;
+    tex=Date.now()+(r.expires_in||3600)*1000-60000;
+    try{
+      await boot();
+    }catch(e){
+      alert('Google account access error: '+(e.message||e));
+    }
+  };
+
+  /* Force account selection when multiple Google accounts exist. */
+  tc.requestAccessToken({prompt:'select_account'});
+}catch(e){
+  alert('Sign in failed: '+(e.message||e.error||e.type||'try again'));
+}}
+function gate(){$('#app').innerHTML=CID()?`<div class="card"><b>📱 Gowin Mobiles</b><p class="sm">Google account-la sign in pannunga. Phone & PC rendulaiyum same account use pannunga.</p><button onclick="signin()">🔐 Sign in / Select Google Account</button>
+<button class="g" onclick="tok='';tex=0;tc=null;alert('Next login-la Google account chooser varum.')">🔄 Switch Google Account</button>
+<button class="g" onclick="localStorage.removeItem('gm_cid');gate()">Client ID maathanum</button></div>`:`<div class="card"><b>Setup (oru thadava)</b><p class="sm">Google Cloud-la create panna OAuth Client ID inga paste pannunga.</p><input id="cid" placeholder="xxxx.apps.googleusercontent.com"><button onclick="localStorage.gm_cid=$('#cid').value.trim();gate()">Save</button></div>`}
 gate();
 </script></body></html>
