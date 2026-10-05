@@ -70,13 +70,14 @@ function sendBtns(j,t){return `<div class="row"><button class="w" onclick="wa(J(
 function pend(){const n=Date.now();return jobs.filter(j=>j.status=='Ready'&&j.readyAt&&n-j.readyAt>set.days*864e5)}
 function render(){const a=$('#app');if(!ready)return;$('#cnt').textContent=jobs.filter(j=>j.status!='Delivered').length+' open ☁️';
 if(view=='list')return list(a);if(view=='new')return form(a);if(view=='det')return det(a);if(view=='temp')return tempFinder(a);set_(a)}
-function tempFinder(a){
+function tempFinder(a,keepFocus=false){
 const qv=(window.tempQ||'').trim().toUpperCase();
 const group=(window.tempG||'').trim();
 let R=TEMP_MODELS.filter(x=>(!qv||x.m.toUpperCase().includes(qv))&&(!group||String(x.g)==group));
 R=R.slice(0,120);
-a.innerHTML=`<div class="card"><div class="tf"><b style="font-size:18px">🛡️ Tempered Finder</b><div class="tr"><span class="sm">${TEMP_MODELS.length} compatible entries · ${Object.keys(TEMP_GROUPS).length} groups</span></div><input id="tq" placeholder="🔍 Search model e.g. VIVO Y200 / OPPO RENO 13" value="${esc(window.tempQ||'')}" oninput="window.tempQ=this.value;tempFinder($('#app'));$('#tq').focus()"><select onchange="window.tempG=this.value;tempFinder($('#app'))"><option value="">All Groups</option>${Object.keys(TEMP_GROUPS).map(g=>`<option value="${g}" ${String(window.tempG||'')==g?'selected':''}>Group ${g}</option>`).join('')}</select></div></div>`+
+a.innerHTML=`<div class="card"><div class="tf"><b style="font-size:18px">🛡️ Tempered Finder</b><div class="tr"><span class="sm">${TEMP_MODELS.length} compatible entries · ${Object.keys(TEMP_GROUPS).length} groups</span></div><input id="tq" placeholder="🔍 Search model e.g. VIVO Y200 / OPPO RENO 13" value="${esc(window.tempQ||'')}" oninput="window.tempQ=this.value;tempFinder($('#app'),true)"><select onchange="window.tempG=this.value;tempFinder($('#app'))"><option value="">All Groups</option>${Object.keys(TEMP_GROUPS).map(g=>`<option value="${g}" ${String(window.tempG||'')==g?'selected':''}>Group ${g}</option>`).join('')}</select></div></div>`+
 (R.length?R.map(x=>`<div class="card" style="cursor:pointer" onclick="pickTemp(${JSON.stringify(x.m)})"><div class="tr"><b>${esc(x.m)}</b><span class="tg">GROUP ${x.g}</span></div><div class="sm">🛡️ Compatible tempered glass · Tap to add</div></div>`).join(''):`<div class="card"><b>No matching model</b><p class="sm">இந்த list-ல் exact match இல்லை. வேறு model name search பண்ணுங்கள்.</p></div>`);
+if(keepFocus){const e=$('#tq');if(e){const p=e.value.length;e.focus();try{e.setSelectionRange(p,p)}catch(_){}}}
 }
 function pickTemp(model){
 const j=cur.id?J(cur.id):null;
