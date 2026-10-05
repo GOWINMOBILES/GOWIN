@@ -24,7 +24,7 @@ label{font-size:13px;color:var(--mu)}
 .chk label{display:flex;align-items:center;gap:6px;color:var(--tx);font-size:14px}
 .chk input{width:auto;margin:0}
 .tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600;border:1px solid currentColor}
-.Received{color:var(--pr)}.Progress{color:var(--wn)}.Ready{color:var(--ok)}.Delivered{color:var(--mu)}
+.Received{color:var(--pr)}.Progress{color:var(--wn)}.Ready{color:var(--ok)}.Delivered{color:var(--mu)}.status-btn.active{background:var(--pr);color:#fff;border-color:var(--pr)}
 .alert{background:var(--wn);color:#fff;border-radius:10px;padding:10px;margin-bottom:10px}
 .ph{display:flex;gap:6px;flex-wrap:wrap}.ph img{width:70px;height:70px;object-fit:cover;border-radius:8px;border:1px solid var(--bd)}
 canvas{width:100%;height:120px;border:1px dashed var(--mu);border-radius:8px;background:#fff;touch-action:none}
@@ -118,6 +118,7 @@ checks:[...document.querySelectorAll('[name=ck]:checked')].map(e=>e.value),idTyp
 try{await put(j);await upPics(j.id,cur);delete pics[j.id];go('det',j.id)}catch(e){$('#cb').disabled=false;alert('Save aagala: '+(e.message||e.code))}}
 function det(a){const j=J(cur.id);if(!j)return go('list');if(!pics[j.id])loadPics(j.id);const P=pics[j.id]||[],sg=P.find(p=>p.kind=='sig');
 a.innerHTML=`<button class="g" onclick="go('list')">← Back</button>
+<div class="card" style="display:flex;align-items:center;justify-content:space-between"><b>JOB STATUS</b><span class="tag ${j.status}" style="font-size:14px;padding:5px 10px">${SN[j.status]||j.status}</span></div>
 <div class="card" id="recv_${j.id}"><div class="row" style="align-items:center"><b>① 📥 Receiving Details</b><button class="g" style="width:auto;margin-left:auto;padding:7px 14px" onclick="editReceiving(${j.id})">✏️ Edit</button></div>
 <div id="recv_view_${j.id}"><p class="sm">Customer: <b>${esc(j.name||'-')}</b> · Phone: <b>${esc(j.phone||'-')}</b></p><p class="sm">${esc(j.cat||'-')}: <b>${esc(j.model||'-')}</b>${j.imei?' · IMEI '+esc(j.imei):''}</p><p class="sm">Problem: <b>${esc(j.problem||'-')}</b>${j.lock?' · Lock: '+esc(j.lock):''}</p><p class="sm">ID proof: ${esc(j.idType||'-')}</p><p class="sm">Receiving Items / Condition: ${j.checks?.length?j.checks.map(c=>`<span class="tag">${esc(c)}</span> `).join(''):'None recorded'}</p>${j.dead?'<p style="color:var(--er)"><b>⚠️ Dead risk accepted</b></p>':''}</div>
 <div id="recv_edit_${j.id}" style="display:none"><div class="row"><div><label>Customer name</label><input id="r_name" value="${esc(j.name)}"></div><div><label>Phone</label><input id="r_phone" type="tel" maxlength="10" value="${esc(j.phone)}"></div></div>
@@ -136,9 +137,9 @@ a.innerHTML=`<button class="g" onclick="go('list')">← Back</button>
 <label>🛍️ Accessories / Extra items</label>${(j.acc||[]).map((x,i)=>`<div class="row" style="align-items:center"><span>${esc(x.n)} – ₹${N(x.p)}</span><button class="g" style="flex:0 0 60px" onclick="delAcc(${j.id},${i})">✕</button></div>`).join('')}
 <div class="row"><input id="an" placeholder="Item (charger, cable, case...)"/><input id="ap" type="number" placeholder="₹ price"></div><button class="g" onclick="addAcc(${j.id})">➕ Add accessory</button>
 <div class="row"><div><label>Cash ₹</label><input type="number" value="${N(j.cash)}" onchange="upd(${j.id},'cash',+this.value)"></div><div><label>UPI ₹</label><input type="number" value="${N(j.upi)}" onchange="upd(${j.id},'upi',+this.value)"></div></div>
-<div class="sm">Total: <b>₹${grand(j)-N(j.disc)}</b> · Balance: <b>₹${bal(j)}</b></div><label style="margin-top:8px">🔒 Spare price ₹ (internal – PDF-la varaathu)</label><div class="row" style="align-items:center"><input id="spare_${j.id}" type="password" inputmode="numeric" value="${N(j.spare)}" oninput="this.value=this.value.replace(/\D/g,'')" onblur="upd(${j.id},'spare',+this.value||0)" style="margin:3px 0 8px"><button class="g" type="button" title="Press and hold to view spare price" style="flex:0 0 52px;width:52px;padding:10px;user-select:none;-webkit-user-select:none;touch-action:none" onmousedown="showSpare(${j.id})" onmouseup="hideSpare(${j.id})" onmouseleave="hideSpare(${j.id})" ontouchstart="showSpare(${j.id});event.preventDefault()" ontouchend="hideSpare(${j.id})" ontouchcancel="hideSpare(${j.id})">👁️</button></div></div>
+<div class="sm">Total: <b>₹${grand(j)-N(j.disc)}</b> · Balance: <b>₹${bal(j)}</b></div><label style="margin-top:8px">🔒 Spare price ₹ (internal – PDF-la varaathu)</label><div class="row" style="align-items:center"><input id="spare_${j.id}" type="text" inputmode="numeric" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" value="${N(j.spare)}" oninput="this.value=this.value.replace(/\D/g,'')" onblur="upd(${j.id},'spare',+this.value||0)" style="margin:3px 0 8px;-webkit-text-security:disc"><button class="g" type="button" title="Press and hold to view spare price" style="flex:0 0 52px;width:52px;padding:10px;user-select:none;-webkit-user-select:none;touch-action:none" onmousedown="showSpare(${j.id})" onmouseup="hideSpare(${j.id})" onmouseleave="hideSpare(${j.id})" ontouchstart="showSpare(${j.id});event.preventDefault()" ontouchend="hideSpare(${j.id})" ontouchcancel="hideSpare(${j.id})">👁️</button></div></div>
 
-<div class="card"><b>Status</b><div class="row"><button class="g" onclick="st(${j.id},'Progress')">In Progress</button><button class="g" onclick="st(${j.id},'Ready')">Ready</button><button class="g" onclick="st(${j.id},'Delivered')">Delivered</button></div><b>Send message</b><p class="sm">Job created:</p>${sendBtns(j,'new')}<p class="sm">Ready:</p>${sendBtns(j,'ready')}<p class="sm">Delivered + feedback:</p>${sendBtns(j,'del')}<button onclick="pdf(${j.id})">📄 PDF Invoice</button><button class="r" onclick="del(${j.id})">Delete</button></div>`}
+<div class="card"><div class="row" style="align-items:center"><b>Status</b><span class="tag ${j.status}" style="margin-left:auto;font-size:14px;padding:5px 10px">${SN[j.status]||j.status}</span></div><p class="sm" style="margin:4px 0 8px">Current status: <b>${SN[j.status]||j.status}</b></p><div class="row"><button class="g status-btn ${j.status=='Received'?'active':''}" onclick="st(${j.id},'Received')">Received</button><button class="g status-btn ${j.status=='Progress'?'active':''}" onclick="st(${j.id},'Progress')">In Progress</button><button class="g status-btn ${j.status=='Ready'?'active':''}" onclick="st(${j.id},'Ready')">Ready</button><button class="g status-btn ${j.status=='Delivered'?'active':''}" onclick="st(${j.id},'Delivered')">Delivered</button></div>${j.status=='Delivered'?`<label style="margin-top:8px">📅 Delivery date</label><input type="date" value="${outDateInput(j)}" onchange="setDeliveryDate(${j.id},this.value)"><p class="sm">Default: today. Yesterday/other date needed only in special cases.</p>`:''}<b>Send message</b><p class="sm">Job created:</p>${sendBtns(j,'new')}<p class="sm">Ready:</p>${sendBtns(j,'ready')}<p class="sm">Delivered + feedback:</p>${sendBtns(j,'del')}<button onclick="pdf(${j.id})">📄 PDF Invoice</button><button class="r" onclick="del(${j.id})">Delete</button></div>`}
 
 function editReceiving(id){
  const v=document.getElementById('recv_view_'+id),e=document.getElementById('recv_edit_'+id);
@@ -155,10 +156,13 @@ function saveReceiving(id){
  j.dead=!!document.getElementById('r_dead')?.checked;
  put(j); alert('Receiving details updated ✅');
 }
-function showSpare(id){const i=$('#spare_'+id);if(i)i.type='text';}
-function hideSpare(id){const i=$('#spare_'+id);if(i)i.type='password';}
+function showSpare(id){const i=$('#spare_'+id);if(i)i.style.webkitTextSecurity='none';}
+function hideSpare(id){const i=$('#spare_'+id);if(i)i.style.webkitTextSecurity='disc';}
 function upd(id,k,v){const j=J(id);j[k]=v;put(j)}
-function st(id,s){const j=J(id);j.status=s;if(s=='Ready')j.readyAt=Date.now();if(s=='Delivered')j.outAt=Date.now();put(j)}
+function localDateInput(v){const d=new Date(v||Date.now());return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function outDateInput(j){return localDateInput(j.outAt||Date.now())}
+function setDeliveryDate(id,v){const j=J(id);if(!v)return;j.outAt=new Date(v+'T12:00:00').getTime();put(j)}
+function st(id,s){const j=J(id);j.status=s;if(s=='Ready')j.readyAt=Date.now();if(s=='Delivered'&&!j.outAt)j.outAt=Date.now();put(j)}
 async function pdf(id){const j=J(id),{jsPDF}=window.jspdf,d=new jsPDF();let y=20;
 const L=(t,s=11,b)=>{d.setFontSize(s);d.setFont('helvetica',b?'bold':'normal');d.text(String(t),15,y);y+=s/2+3};
 L(set.shop.toUpperCase(),20,1);L('206, Kundrathur Main Rd, Kungumam Nagar,',10);L('Porur, Chennai-600116.',10);L('C.no: 9500977305',10);y+=4;L('SERVICE INVOICE',14,1);
