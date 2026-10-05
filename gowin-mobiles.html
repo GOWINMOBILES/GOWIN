@@ -124,6 +124,17 @@ a.innerHTML=`<button class="g" onclick="go('list')">← Back</button><div class=
 <span class="sm">${new Date(j.date).toLocaleString()}</span><br>${j.checks.map(c=>`✔ ${c}`).join('<br>')}
 ${j.dead?'<p style="color:var(--er)"><b>⚠️ Dead risk accepted</b></p>'+(sg?`<img src="${sg.data}" style="height:60px;background:#fff;border-radius:6px">`:''):''}
 <div class="ph">${P.filter(p=>p.kind=='photo').map(p=>`<img src="${p.data}">`).join('')}</div>${P.some(p=>p.kind=='id')?`<p class="sm">ID: ${esc(j.idType)}</p><div class="ph">${P.filter(p=>p.kind=='id').map(p=>`<img src="${p.data}">`).join('')}</div>`:''}</div>
+<div class="card"><b>📥 Receiving Details</b><p class="sm">Job create pannumbothu enter panna customer/device details-ஐ இங்கே edit செய்யலாம்.</p>
+<div class="row"><div><label>Customer name</label><input id="r_name" value="${esc(j.name)}"></div><div><label>Phone</label><input id="r_phone" type="tel" maxlength="10" value="${esc(j.phone)}"></div></div>
+<div class="row"><div><label>Category</label><select id="r_cat"><option ${j.cat=='SERVICE'?'selected':''}>SERVICE</option><option ${j.cat=='ACCESSORIES'?'selected':''}>ACCESSORIES</option></select></div><div><label>IMEI</label><input id="r_imei" value="${esc(j.imei||'')}"></div></div>
+<label>Model (Brand + Model)</label><input id="r_model" value="${esc(j.model||'')}">
+<label>Problem / Complaint</label><textarea id="r_problem" rows="2">${esc(j.problem||'')}</textarea>
+<label>Lock / Pattern</label><input id="r_lock" value="${esc(j.lock||'')}">
+<label>ID proof type</label><select id="r_idtype">${['Aadhaar','Driving License','Voter ID','Other'].map(x=>`<option ${j.idType==x?'selected':''}>${x}</option>`).join('')}</select>
+<b style="display:block;margin:8px 0 4px">Physical / Receiving condition</b><div class="chk">${[...CK,...LQ,...ACC].map(c=>`<label><input type="checkbox" name="rck" value="${esc(c)}" ${j.checks?.includes(c)?'checked':''}>${esc(c)}</label>`).join('')}</div>
+<label style="display:flex;gap:8px;align-items:flex-start;margin-top:8px"><input id="r_dead" type="checkbox" style="width:auto;margin-top:4px" ${j.dead?'checked':''}><span>⚠️ Dead risk / data loss risk accepted</span></label>
+<button onclick="saveReceiving(${j.id})">💾 Save Receiving Details</button>
+</div>
 <div class="card"><b>💰 Billing</b><div class="row"><div><label>Repair price ₹</label><input type="number" value="${N(j.total)}" onchange="upd(${j.id},'total',+this.value)"></div><div><label>Discount ₹</label><input type="number" value="${N(j.disc)}" onchange="upd(${j.id},'disc',+this.value)"></div></div>
 <label>Work done (DESCRIPTION)</label><input value="${esc(j.work)}" onchange="upd(${j.id},'work',this.value)">
 <label>🔧 Spare changed (part name)</label><input value="${esc(j.part)}" placeholder="Display / Battery..." onchange="upd(${j.id},'part',this.value)">
@@ -139,6 +150,15 @@ ${j.tmp?`<div class="row"><div><label>Temper qty</label><input type="number" val
 <div class="card"><b>Status</b><div class="row"><button class="g" onclick="st(${j.id},'Progress')">In Progress</button><button class="g" onclick="st(${j.id},'Ready')">Ready</button><button class="g" onclick="st(${j.id},'Delivered')">Delivered</button></div>
 <b>Send message</b><p class="sm">Job created:</p>${sendBtns(j,'new')}<p class="sm">Ready:</p>${sendBtns(j,'ready')}<p class="sm">Delivered + feedback:</p>${sendBtns(j,'del')}
 <button onclick="pdf(${j.id})">📄 PDF Invoice</button><button class="r" onclick="del(${j.id})">Delete</button></div>`}
+function saveReceiving(id){
+ const j=J(id); if(!j)return;
+ const g=x=>document.getElementById(x)?.value.trim()||'';
+ j.name=g('r_name'); j.phone=g('r_phone'); j.imei=g('r_imei'); j.cat=g('r_cat'); j.model=g('r_model');
+ j.problem=g('r_problem'); j.lock=g('r_lock'); j.idType=g('r_idtype');
+ j.checks=[...document.querySelectorAll('[name="rck"]:checked')].map(e=>e.value);
+ j.dead=!!document.getElementById('r_dead')?.checked;
+ put(j); alert('Receiving details updated ✅');
+}
 function upd(id,k,v){const j=J(id);j[k]=v;put(j)}
 function st(id,s){const j=J(id);j.status=s;if(s=='Ready')j.readyAt=Date.now();if(s=='Delivered')j.outAt=Date.now();put(j)}
 async function pdf(id){const j=J(id),{jsPDF}=window.jspdf,d=new jsPDF();let y=20;
