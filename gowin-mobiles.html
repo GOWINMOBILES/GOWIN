@@ -73,17 +73,15 @@ if(view=='list')return list(a);if(view=='new')return form(a);if(view=='det')retu
 function tempFinder(a,keepFocus=false){
 const qv=(window.tempQ||'').trim().toUpperCase();
 const group=(window.tempG||'').trim();
-let R=TEMP_MODELS.filter(x=>(!qv||x.m.toUpperCase().includes(qv))&&(!group||String(x.g)==group));
-R=R.slice(0,120);
-a.innerHTML=`<div class="card"><div class="tf"><b style="font-size:18px">🛡️ Tempered Finder</b><div class="tr"><span class="sm">${TEMP_MODELS.length} compatible entries · ${Object.keys(TEMP_GROUPS).length} groups</span></div><input id="tq" placeholder="🔍 Search model e.g. VIVO Y200 / OPPO RENO 13" value="${esc(window.tempQ||'')}" oninput="window.tempQ=this.value;tempFinder($('#app'),true)"><select onchange="window.tempG=this.value;tempFinder($('#app'))"><option value="">All Groups</option>${Object.keys(TEMP_GROUPS).map(g=>`<option value="${g}" ${String(window.tempG||'')==g?'selected':''}>Group ${g}</option>`).join('')}</select></div></div>`+
-(R.length?R.map(x=>`<div class="card" style="cursor:pointer" onclick="pickTemp(${JSON.stringify(x.m)})"><div class="tr"><b>${esc(x.m)}</b><span class="tg">GROUP ${x.g}</span></div><div class="sm">🛡️ Compatible tempered glass · Tap to add</div></div>`).join(''):`<div class="card"><b>No matching model</b><p class="sm">இந்த list-ல் exact match இல்லை. வேறு model name search பண்ணுங்கள்.</p></div>`);
+let R=qv?TEMP_MODELS.filter(x=>x.m.toUpperCase().includes(qv)):[];
+if(group)R=R.filter(x=>String(x.g)==group);
+const groups=[...new Set(R.map(x=>x.g))].sort((a,b)=>a-b);
+a.innerHTML=`<div class="card"><div class="tf"><b style="font-size:18px">🛡️ Temper</b><div class="tr"><span class="sm">${TEMP_MODELS.length} compatible entries · ${Object.keys(TEMP_GROUPS).length} groups</span></div><input id="tq" placeholder="🔍 Enter model e.g. VIVO Y200 / OPPO RENO 13" value="${esc(window.tempQ||'')}" oninput="window.tempQ=this.value;tempFinder($('#app'),true)"><select onchange="window.tempG=this.value;tempFinder($('#app'))"><option value="">All Groups</option>${Object.keys(TEMP_GROUPS).map(g=>`<option value="${g}" ${String(window.tempG||'')==g?'selected':''}>Group ${g}</option>`).join('')}</select></div></div>`+
+(qv?(groups.length?groups.map(g=>`<div class="card"><div class="tr"><b>GROUP ${g}</b><span class="tg">UNIVERSAL / SERIES ${g}</span></div><div class="sm">🛡️ ${esc(qv)} → இந்த tempered group</div></div>`).join(''):`<div class="card"><b>No matching group</b><p class="sm">இந்த model tempered list-ல் இல்லை.</p></div>`):`<div class="card"><b>Model enter pannunga</b><p class="sm">Model name type செய்தால் matching tempered group / universal series number மட்டும் காட்டப்படும்.</p></div>`);
 if(keepFocus){const e=$('#tq');if(e){const p=e.value.length;e.focus();try{e.setSelectionRange(p,p)}catch(_){}}}
 }
-function pickTemp(model){
-const j=cur.id?J(cur.id):null;
-if(j){j.tmp='paid';j.tmpQ=1;j.tmpP=N(j.tmpP);j.tmpModel=model;put(j);alert(model+' → Temper added to job '+j.code);go('det',j.id);return}
-if(confirm(model+'\n\nNew Job-ல் model ஆக set செய்யவா?')){go('new');setTimeout(()=>{const e=$('#m');if(e){e.value=model;e.dispatchEvent(new Event('input'));}},0)}
-}
+
+function pickTemp(model){window.tempQ=model;go('temp')}
 
 function list(a){const p=pend();
 let L=jobs.filter(j=>(filt=='Active'?j.status!='Delivered':filt=='All'||j.status==filt)&&(!q||(j.name+j.phone+j.code+j.model).toLowerCase().includes(q.toLowerCase())));
@@ -94,12 +92,12 @@ function remindAll(){const p=pend();if(!p.length)return;const j=p[0];wa(j,`Vanak
 function form(a){cur={photos:[],idp:[],sig:''};
 a.innerHTML=`<div class="card"><b>New Job</b><br><label>Customer name</label><input id="n"><label>Phone</label><input id="p" type="tel" maxlength="10">
 <div class="row"><div><label>Category</label><select id="cat"><option>SERVICE</option><option>ACCESSORIES</option></select></div><div><label>IMEI (optional)</label><input id="imei"></div></div>
-<label>Model (Brand + Model)</label><div class="row"><input id="m"><button type="button" class="g" onclick="window.tempQ=$('#m').value;go('temp')">🛡️ Find</button></div><label>Problem</label><textarea id="pr" rows="2"></textarea>
+<label>Model (Brand + Model)</label><input id="m"><label>Problem</label><textarea id="pr" rows="2"></textarea>
 <label>Lock/Pattern (optional)</label><input id="lk">
 <div class="row"><div><label>Estimate ₹</label><input id="tt" type="number"></div><div><label>Advance ₹ (cash)</label><input id="ad" type="number"></div></div></div>
 <div class="card"><b>Physical condition ✔</b><div class="chk">${CK.map(c=>`<label><input type="checkbox" name="ck" value="${c}">${c}</label>`).join('')}</div>
 <b style="display:block;margin-top:8px">Liquid / Power ✔</b><div class="chk">${LQ.map(c=>`<label><input type="checkbox" name="ck" value="${c}">${c}</label>`).join('')}</div>
-<b style="display:block;margin-top:8px">Kudutha items ✔</b><div class="chk">${ACC.map(c=>`<label><input type="checkbox" name="ck" value="${c}">${c}</label>`).join('')}</div>
+<b style="display:block;margin-top:8px">Receiving Items ✔</b><div class="chk">${ACC.map(c=>`<label><input type="checkbox" name="ck" value="${c}">${c}</label>`).join('')}</div>
 <label style="margin-top:8px">📷 Device condition photos</label><input type="file" accept="image/*" capture="environment" multiple onchange="addPh(this,'photos')"><div class="ph" id="photos"></div></div>
 <div class="card"><b>🪪 ID proof (silla customers)</b><select id="it"><option>Aadhaar</option><option>Driving License</option><option>Voter ID</option><option>Other</option></select>
 <input type="file" accept="image/*" capture="environment" multiple onchange="addPh(this,'idp')"><div class="ph" id="idp"></div></div>
@@ -120,32 +118,28 @@ checks:[...document.querySelectorAll('[name=ck]:checked')].map(e=>e.value),idTyp
 try{await put(j);await upPics(j.id,cur);delete pics[j.id];go('det',j.id)}catch(e){$('#cb').disabled=false;alert('Save aagala: '+(e.message||e.code))}}
 function det(a){const j=J(cur.id);if(!j)return go('list');if(!pics[j.id])loadPics(j.id);const P=pics[j.id]||[],sg=P.find(p=>p.kind=='sig');
 a.innerHTML=`<button class="g" onclick="go('list')">← Back</button>
-<div class="card" id="recv_${j.id}"><div class="row" style="align-items:center"><b>📥 Receiving Details</b><button class="g" style="width:auto;margin-left:auto;padding:7px 14px" onclick="editReceiving(${j.id})">✏️ Edit</button></div>
-<div id="recv_view_${j.id}"><p class="sm">Customer: <b>${esc(j.name||'-')}</b> · Phone: <b>${esc(j.phone||'-')}</b></p><p class="sm">${esc(j.cat||'-')}: <b>${esc(j.model||'-')}</b>${j.imei?' · IMEI '+esc(j.imei):''}</p><p class="sm">Problem: <b>${esc(j.problem||'-')}</b>${j.lock?' · Lock: '+esc(j.lock):''}</p><p class="sm">ID proof: ${esc(j.idType||'-')}</p><p class="sm">Condition: ${j.checks?.length?j.checks.map(c=>`<span class="tag">${esc(c)}</span> `).join(''):'None recorded'}</p>${j.dead?'<p style="color:var(--er)"><b>⚠️ Dead risk accepted</b></p>':''}</div>
+<div class="card" id="recv_${j.id}"><div class="row" style="align-items:center"><b>① 📥 Receiving Details</b><button class="g" style="width:auto;margin-left:auto;padding:7px 14px" onclick="editReceiving(${j.id})">✏️ Edit</button></div>
+<div id="recv_view_${j.id}"><p class="sm">Customer: <b>${esc(j.name||'-')}</b> · Phone: <b>${esc(j.phone||'-')}</b></p><p class="sm">${esc(j.cat||'-')}: <b>${esc(j.model||'-')}</b>${j.imei?' · IMEI '+esc(j.imei):''}</p><p class="sm">Problem: <b>${esc(j.problem||'-')}</b>${j.lock?' · Lock: '+esc(j.lock):''}</p><p class="sm">ID proof: ${esc(j.idType||'-')}</p><p class="sm">Receiving Items / Condition: ${j.checks?.length?j.checks.map(c=>`<span class="tag">${esc(c)}</span> `).join(''):'None recorded'}</p>${j.dead?'<p style="color:var(--er)"><b>⚠️ Dead risk accepted</b></p>':''}</div>
 <div id="recv_edit_${j.id}" style="display:none"><div class="row"><div><label>Customer name</label><input id="r_name" value="${esc(j.name)}"></div><div><label>Phone</label><input id="r_phone" type="tel" maxlength="10" value="${esc(j.phone)}"></div></div>
 <div class="row"><div><label>Category</label><select id="r_cat"><option ${j.cat=='SERVICE'?'selected':''}>SERVICE</option><option ${j.cat=='ACCESSORIES'?'selected':''}>ACCESSORIES</option></select></div><div><label>IMEI</label><input id="r_imei" value="${esc(j.imei||'')}"></div></div>
 <label>Model (Brand + Model)</label><input id="r_model" value="${esc(j.model||'')}">
 <label>Problem / Complaint</label><textarea id="r_problem" rows="2">${esc(j.problem||'')}</textarea>
 <label>Lock / Pattern</label><input id="r_lock" value="${esc(j.lock||'')}">
 <label>ID proof type</label><select id="r_idtype">${['Aadhaar','Driving License','Voter ID','Other'].map(x=>`<option ${j.idType==x?'selected':''}>${x}</option>`).join('')}</select>
-<b style="display:block;margin:8px 0 4px">Physical / Receiving condition</b><div class="chk">${[...CK,...LQ,...ACC].map(c=>`<label><input type="checkbox" name="rck" value="${esc(c)}" ${j.checks?.includes(c)?'checked':''}>${esc(c)}</label>`).join('')}</div>
+<b style="display:block;margin:8px 0 4px">Receiving Items / Condition</b><div class="chk">${[...CK,...LQ,...ACC].map(c=>`<label><input type="checkbox" name="rck" value="${esc(c)}" ${j.checks?.includes(c)?'checked':''}>${esc(c)}</label>`).join('')}</div>
 <label style="display:flex;gap:8px;align-items:flex-start;margin-top:8px"><input id="r_dead" type="checkbox" style="width:auto;margin-top:4px" ${j.dead?'checked':''}><span>⚠️ Dead risk / data loss risk accepted</span></label>
 <div class="row"><button onclick="saveReceiving(${j.id})">💾 Save</button><button class="g" onclick="cancelReceiving(${j.id})">Cancel</button></div></div></div>
-<div class="card"><b>💰 Billing</b><div class="row"><div><label>Repair price ₹</label><input type="number" value="${N(j.total)}" onchange="upd(${j.id},'total',+this.value)"></div><div><label>Discount ₹</label><input type="number" value="${N(j.disc)}" onchange="upd(${j.id},'disc',+this.value)"></div></div>
-<label>Work done (DESCRIPTION)</label><input value="${esc(j.work)}" onchange="upd(${j.id},'work',this.value)">
-<label>🔧 Spare changed (part name)</label><input value="${esc(j.part)}" placeholder="Display / Battery..." onchange="upd(${j.id},'part',this.value)">
-<label>🛡️ Spare warranty</label><select onchange="upd(${j.id},'wdays',+this.value)">${[[0,'No warranty'],[90,'90 days'],[180,'180 days']].map(o=>`<option value="${o[0]}" ${wdy(j)==o[0]?'selected':''}>${o[1]}</option>`).join('')}</select>
-<label>🛡️ Temper glass</label><select onchange="upd(${j.id},'tmp',this.value)">${[['','No temper'],['free','Free (இலவசம்)'],['paid','Cost (paid)']].map(o=>`<option value="${o[0]}" ${(j.tmp||'')==o[0]?'selected':''}>${o[1]}</option>`).join('')}</select><button class="g" onclick="go('temp')">🔍 Find Temper Model</button>
-${j.tmp?`<div class="row"><div><label>Temper qty</label><input type="number" value="${j.tmpQ||1}" onchange="upd(${j.id},'tmpQ',+this.value)"></div>${j.tmp=='paid'?`<div><label>Temper price ₹</label><input type="number" value="${N(j.tmpP)}" onchange="upd(${j.id},'tmpP',+this.value)"></div>`:''}</div>`:''}
-<label>🎧 Accessories sale</label>${(j.acc||[]).map((x,i)=>`<div class="row" style="align-items:center"><span>${esc(x.n)} – ₹${N(x.p)}</span><button class="g" style="flex:0 0 60px" onclick="delAcc(${j.id},${i})">✕</button></div>`).join('')}
-<div class="row"><input id="an" placeholder="Item (cable, case...)"><input id="ap" type="number" placeholder="₹ price"></div><button class="g" onclick="addAcc(${j.id})">➕ Add accessory</button>
+
+<div class="card"><b>② 🔧 Repairing Details</b><label>Diagnosis / Fault</label><textarea id="diag_${j.id}" rows="2" onchange="upd(${j.id},'diagnosis',this.value)">${esc(j.diagnosis||'')}</textarea><label>Work done (DESCRIPTION)</label><input value="${esc(j.work)}" onchange="upd(${j.id},'work',this.value)"><label>Spare / Part changed</label><input value="${esc(j.part)}" placeholder="Display / Battery..." onchange="upd(${j.id},'part',this.value)"><label>Spare warranty</label><select onchange="upd(${j.id},'wdays',+this.value)">${[[0,'No warranty'],[90,'90 days'],[180,'180 days']].map(o=>`<option value="${o[0]}" ${wdy(j)==o[0]?'selected':''}>${o[1]}</option>`).join('')}</select><div class="sm">Repairing stage complete → Billing stage-க்கு செல்லலாம்.</div></div>
+
+<div class="card"><b>③ 💰 Billing Details</b><div class="row"><div><label>Repair price ₹</label><input type="number" value="${N(j.total)}" onchange="upd(${j.id},'total',+this.value)"></div><div><label>Discount ₹</label><input type="number" value="${N(j.disc)}" onchange="upd(${j.id},'disc',+this.value)"></div></div>
+<label>🛍️ Accessories / Extra items</label>${(j.acc||[]).map((x,i)=>`<div class="row" style="align-items:center"><span>${esc(x.n)} – ₹${N(x.p)}</span><button class="g" style="flex:0 0 60px" onclick="delAcc(${j.id},${i})">✕</button></div>`).join('')}
+<div class="row"><input id="an" placeholder="Item (charger, cable, case...)"/><input id="ap" type="number" placeholder="₹ price"></div><button class="g" onclick="addAcc(${j.id})">➕ Add accessory</button>
 <div class="row"><div><label>Cash ₹</label><input type="number" value="${N(j.cash)}" onchange="upd(${j.id},'cash',+this.value)"></div><div><label>UPI ₹</label><input type="number" value="${N(j.upi)}" onchange="upd(${j.id},'upi',+this.value)"></div></div>
-<div class="sm">Total: <b>₹${grand(j)-N(j.disc)}</b> · Balance: <b>₹${bal(j)}</b></div>
-<label style="margin-top:8px">🔒 Spare price ₹ (internal – PDF-la varaathu)</label><input type="number" value="${N(j.spare)}" onchange="upd(${j.id},'spare',+this.value)">
-<div class="sm">Profit (F): <b style="color:var(--ok)">₹${grand(j)-N(j.disc)-N(j.spare)}</b></div></div>
-<div class="card"><b>Status</b><div class="row"><button class="g" onclick="st(${j.id},'Progress')">In Progress</button><button class="g" onclick="st(${j.id},'Ready')">Ready</button><button class="g" onclick="st(${j.id},'Delivered')">Delivered</button></div>
-<b>Send message</b><p class="sm">Job created:</p>${sendBtns(j,'new')}<p class="sm">Ready:</p>${sendBtns(j,'ready')}<p class="sm">Delivered + feedback:</p>${sendBtns(j,'del')}
-<button onclick="pdf(${j.id})">📄 PDF Invoice</button><button class="r" onclick="del(${j.id})">Delete</button></div>`}
+<div class="sm">Total: <b>₹${grand(j)-N(j.disc)}</b> · Balance: <b>₹${bal(j)}</b></div><label style="margin-top:8px">🔒 Spare cost ₹ (internal – PDF-la varaathu)</label><input type="number" value="${N(j.spare)}" onchange="upd(${j.id},'spare',+this.value)"><div class="sm">Profit (F): <b style="color:var(--ok)">₹${grand(j)-N(j.disc)-N(j.spare)}</b></div></div>
+
+<div class="card"><b>Status</b><div class="row"><button class="g" onclick="st(${j.id},'Progress')">In Progress</button><button class="g" onclick="st(${j.id},'Ready')">Ready</button><button class="g" onclick="st(${j.id},'Delivered')">Delivered</button></div><b>Send message</b><p class="sm">Job created:</p>${sendBtns(j,'new')}<p class="sm">Ready:</p>${sendBtns(j,'ready')}<p class="sm">Delivered + feedback:</p>${sendBtns(j,'del')}<button onclick="pdf(${j.id})">📄 PDF Invoice</button><button class="r" onclick="del(${j.id})">Delete</button></div>`}
+
 function editReceiving(id){
  const v=document.getElementById('recv_view_'+id),e=document.getElementById('recv_edit_'+id);
  if(v&&e){v.style.display='none';e.style.display='block'}
