@@ -31,16 +31,19 @@ canvas{width:100%;height:120px;border:1px dashed var(--mu);border-radius:8px;bac
 nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom,0px)}
 nav button{background:none;color:var(--tx);border:0;border-radius:0;margin:0}
 .sm{font-size:13px;color:var(--mu)}
+.tf{position:sticky;top:0;background:var(--bg);padding:6px 0 10px;z-index:2}.tr{display:flex;justify-content:space-between;gap:8px;align-items:center}.tg{font-size:12px;color:var(--mu);white-space:nowrap}
 </style></head><body>
 <header><span>📱 GOWIN MOBILES</span><span id="cnt"></span></header>
 <main id="app"></main>
-<nav><button onclick="go('list')">📋 Jobs</button><button onclick="go('new')">➕ New Job</button><button onclick="go('set')">⚙️ Settings</button></nav>
+<nav><button onclick="go('list')">📋 Jobs</button><button onclick="go('new')">➕ New Job</button><button onclick="go('temp')">🛡️ Temper</button><button onclick="go('set')">⚙️ Settings</button></nav>
 <script>
 const $=s=>document.querySelector(s),U=s=>String(s??'').toUpperCase(),N=v=>+v||0;
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const MO=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 const fd=v=>{const d=new Date(v);return`${d.getDate()}/${d.getMonth()+1}/${String(d.getFullYear()).slice(2)}`};
 const SN={Received:'RECEIVED',Progress:'IN PROGRESS',Ready:'READY',Delivered:'DELIVERED'};
+const TEMP_GROUPS={"1":["REALME 6","REALME 6I (IDN)","REALME 6S","REALME 7","REALME 8 (5G)","REALME 8S (5G)","REALME 9 5G (IDN)","OPPO A52","OPPO A53 (5G)","OPPO A54 (5G)","OPPO A72 (4G/5G)","OPPO A73 (5G)","OPPO A74 (5G)","OPPO A92","OPPO A93 (5G)","OPPO A93S (5G)","NARZO 20 PRO","NARZO 30","NARZO 30 PRO","REALME V5 (5G)","REALME V13 (5G)","REALME Q2","REALME Q3 (5G)","REALME Q3i (5G)","REALME K7X (5G)","REALME K9X (5G)","SAMSUNG A11","SAMSUNG M11","1+ NORD N10","1+ NORD N200","REDMI NOTE 10 (5G)","POCO M3 PRO (4G/5G)","REDMI NOTE 10T (5G)","REDMI 10 (2021/2022)","REDMI 10 PRIME (2021/2022)","REDMI NOTE 11 (4G)","REDMI NOTE 11 SE (5G)"],"2":["RENO 6 5G","RENO 5","RENO 5 5G","RENO 5K","RENO 7 5G (China)","REALME GT 5G","REALME GT MASTER","REALME GT NEO","REALME GT NEO2T","REALME Q3 PRO 5G","REALME X7 MAX 5G","1+ NORD CE 5G","1+ NORD 2 5G","1+ NORD 2T 5G","1+ NORD","OPPO K9 5G","OPPO K9 PRO","OPPO Q3 Pro Carnival","OPPO Find X3 Lite"],"3":["1+ 7","1+ 6T","REALME X2","REALME XT","VIVO V11","VIVO V11 PRO","VIVO X21S","VIVO Y91","MI 9","MI 9 LITE","MI 9 PRO (4G/5G)"],"4":["SAMSUNG A10","SAMSUNG M10","SAMSUNG M01S","SAMSUNG A10S","VIVO Y90","VIVO Y91","VIVO Y91i (India)","VIVO Y91C 2020","VIVO Y93","VIVO Y93S","VIVO Y95","VIVO Y1S","OPPO A5S","OPPO A7","OPPO A11K","OPPO A12","OPPO A12S","REALME 3","REALME 3i","VIVO Y97 (China)","VIVO U1 (China)"],"5":["1+ NORD CE 3 LITE","1+ NORD N30","1+ NORD N30 SE","OPPO F23 5G","OPPO A2","OPPO A80","OPPO A3 (4G/5G)","REALME C55","REALME C67 (4G/5G)","REALME C65 (4G/5G)","REALME C63 5G","REALME C75","REALME C75X","REALME C71","REALME C73","REALME 11X 5G","REALME 11 5G","REALME 12 5G","REALME 12X 5G","REALME 12 LITE","REALME 13 5G","REALME 14X","REALME V50","REALME V50S","REALME V60","REALME V60S","REALME V60 PRO","REALME P3X","NARZO 60X","NARZO N55","NARZO 70X","NARZO N65","NARZO 80X","NARZO 80 LITE 5G","IQOO Z9X","VIVO Y38","VIVO Y200i","VIVO Y200T","VIVO Y58","VIVO Y29","VIVO Y19S","OPPO A58 4G","OPPO A79 5G","OPPO A60","OPPO A3X","OPPO A5","OPPO A5X","OPPO A5i","REALME T3X 5G","VIVO Y300C"],"6":["OPPO F11 PRO","REALME X","RENO 2Z","RENO 2F","REDMI NOTE 9T","REDMI NOTE 9 (5G)","REDMI NOTE 10X (4G)","VIVO Y30","VIVO Y50","MI NOTE 9","MI 10X","OPPO K3","VIVO V15","VIVO Y515","VIVO Y70","VIVO Y70T","VIVO Z1 PRO","VIVO VISION 2"],"7":["SAMSUNG A14 (4G/5G)","SAMSUNG F14","SAMSUNG M14","SAMSUNG A22 (5G)","SAMSUNG A22S (5G)","SAMSUNG F42 (5G)","MOTOROLA G50 (5G)","LG K41S"],"8":["REDMI 10C","REDMI 10","MI 12C","REDMI 10 POWER","POCO C55","POCO C40","POCO C61","MI A3 2024","MI A3X","REDMI 11A","REDMI 12C","SAMSUNG A02"],"9":["SAMSUNG A20","SAMSUNG A30","SAMSUNG A30S","SAMSUNG A50","SAMSUNG A50S","SAMSUNG M21","SAMSUNG M21S","SAMSUNG M21 (2021)","SAMSUNG M50","SAMSUNG M30","SAMSUNG M30S","SAMSUNG M31","SAMSUNG M31 PRIME","SAMSUNG A31","SAMSUNG F41","SAMSUNG M10S","SAMSUNG A32 (4G)","SAMSUNG A33 (5G)","SAMSUNG M32","SAMSUNG F22"],"10":["REALME 5","REALME 5I","REALME 5S","REALME 6I","REALME 10 5G","REALME 10S","REALME 10T 5G","REALME C3","REALME C11","REALME C12","REALME C15","REALME C20","REALME C21","REALME C21Y","REALME C25","REALME C25S","REALME C30","REALME C31","REALME C33","REALME C35","NARZO 10","NARZO 10A","NARZO 20","NARZO 20A","NARZO 30A","NARZO 50 5G","NARZO 50A","NARZO 50I","OPPO A15","OPPO A15S","OPPO A16","OPPO A17","OPPO A17K","OPPO A18","OPPO A31","OPPO A38","OPPO A57 4G","OPPO A57 5G","OPPO A77 4G","OPPO A77S","OPPO A78 5G","INFINIX HOT 8","INFINIX HOT 10I","INFINIX HOT 11","INFINIX HOT 12 PRO","INFINIX HOT 20I","INFINIX HOT 30I","INFINIX SMART 7","INFINIX SMART 7 HD","INFINIX SMART 6 HD","1+ NORD N300","TECNO SPARK 10","TECNO SPARK 10C","TECNO SPARK GO 2023","TECNO NOTE 11","TECNO NOTE 12","VIVO Y01","VIVO Y02","VIVO Y02A","VIVO Y02S","VIVO Y03","VIVO Y11S","VIVO Y12A","VIVO Y12S","VIVO Y15A","VIVO Y15S","VIVO Y16","VIVO Y18","VIVO Y20","VIVO Y20A","VIVO Y21","VIVO Y21A","VIVO Y21S","VIVO Y22","VIVO Y31","VIVO Y33S","VIVO Y35","VIVO Y36 (India)","VIVO Y51 2020","VIVO Y52 5G","VIVO Y55 5G","VIVO Y56","VIVO Y72 5G","VIVO Y75 5G","VIVO Y76 5G","VIVO Y77","IQOO Z3","IQOO Z6","SAMSUNG A02","SAMSUNG A02S","SAMSUNG A03","SAMSUNG A03S","SAMSUNG A04","SAMSUNG A04S","SAMSUNG A12","SAMSUNG A13","SAMSUNG A23","SAMSUNG A32"],"11":["REDMI NOTE 9 PRO","REDMI NOTE 9 PRO MAX","REDMI NOTE 10 PRO","REDMI NOTE 10 PRO MAX","REDMI NOTE 11 PRO","REDMI NOTE 11S 5G","REDMI NOTE 11 PRO 5G","REDMI NOTE 11 PRO MAX","REDMI K30","REDMI K30 PRO","REDMI K40","REDMI K40 PRO","REDMI K50","XIAOMI 10T 5G","XIAOMI 10T PRO","XIAOMI 11T","XIAOMI 11T PRO","XIAOMI 11X","XIAOMI 11X PRO","XIAOMI 12 PRO","POCO F3","POCO F4","POCO F4 GT","POCO M2 PRO","POCO X2","POCO X3","POCO X3 GT","POCO X3 NFC","POCO X3 PRO","POCO X4 GT","POCO X4 PRO 5G","TECNO CAMON 12 AIR","TECNO CAMON 15 AIR","TECNO CAMON 18 PREMIER","SAMSUNG A71","SAMSUNG A72","SAMSUNG A73 5G","SAMSUNG A80","SAMSUNG M51","SAMSUNG M52 5G","SAMSUNG M53","SAMSUNG M54","SAMSUNG M55 5G","SAMSUNG M62","OPPO A36","OPPO A55","OPPO A73 5G","OPPO A76","OPPO A96","OPPO K10","OPPO K9S","OPPO K13","RENO 4Z","RENO 13F","VIVO Y27S","VIVO Y36 4G","VIVO Y36 5G","VIVO Y77T","VIVO Y200 GT 5G","VIVO Y300","IQOO 12 5G","IQOO NEO9 5G","IQOO NEO10","IQOO NEO10 PRO","IQOO Z9 5G","IQOO Z9 TURBO 5G","1+ ACE PRO","1+ NORD 3","1+ NORD CE3","1+ NORD CE4 LITE","MOTOROLA G22","INFINIX SMART 10 HD"],"12":["OPPO X21","OPPO V9","OPPO F7","OPPO A5","OPPO A3S","VIVO Y81","VIVO Y89","VIVO Y85","VIVO Y83","VIVO Y83 Pro","REALME 2","1+ 6","VIVO V9","VIVO V9 PRO","VIVO X21","VIVO X21A"],"13":["OPPO RENO 13","OPPO FIND X8","OPPO RENO 14","OPPO RENO 14F","REALME 15T","OPPO F31 PRO","OPPO A6 PRO 4G","HUAWEI PURA 80","HUAWEI PURA 70"],"14":["XIAOMI X200 PRO MINI","XIAOMI X200 FE","XIAOMI X300","RENO 15 PRO MINI 5G","1+ 13 MINI","1+ 13T","1+ 13S"],"15":["OPPO F15","OPPO F17","OPPO A73 (4G)","OPPO A91","RENO 3","VIVO Y73","VIVO V20","VIVO V20 SE","VIVO V21E","VIVO V23E","VIVO Y75 4G","VIVO V21E 5G","VIVO T1 44W","VIVO Y73S","VIVO Y71T","VIVO T1","VIVO Z6 44W","VIVO V21 (4G/5G)","VIVO V21S","VIVO V25 (5G)","VIVO V25E","VIVO X80 LITE (5G)","VIVO Y70","VIVO Y55 (4G)","VIVO S9E","VIVO S10E","VIVO S15E 5G","VIVO T1 PRO (5G)","IQOO Z6 44W","IQOO Z6 PRO (5G)"],"16":["SAMSUNG A24 (5G)","SAMSUNG M34 (5G)","SAMSUNG F34 (5G)","REDMI NOTE 8 PRO","OPPO A9","OPPO F11","REALME X2 PRO","1+ 7T","VIVO Y19","VIVO U20","SAMSUNG A20S","REDMI 9","REDMI 9T","REDMI 9 PRIME","REDMI 9 POWER","POCO M2","POCO M3"],"17":["REALME NARZO N53","REALME C51","REALME C53"],"18":["SAMSUNG A72","SAMSUNG M54 5G","SAMSUNG F54 5G","SAMSUNG M55 5G","SAMSUNG C55","SAMSUNG F55 5G","SAMSUNG M55S","IQOO NEO 7","IQOO Z7X","IQOO NEO 7 SE","IQOO NEO 7 PRO","IQOO NEO 8","IQOO NEO 8 PRO","IQOO 9 (China)","IQOO NEO 9 PRO","IQOO NEO 9","IQOO NEO 9S PRO","IQOO 10","IQOO 11","IQOO 11S","IQOO 12","IQOO 12 PRO","IQOO Z8X","IQOO Z9 TURBO","IQOO Z9 TURBO+","VIVO Y200 GT","IQOO NEO 10R","IQOO NEO 10","VIVO V50 LITE","VIVO V50 LITE 4G","VIVO Y300 GT","VIVO Y300C","VIVO Y500 5G"],"19":["OPPO A78 4G","OPPO F19","OPPO F19S","OPPO F19 PRO","OPPO F19 PRO+ (5G)","OPPO F21 PRO (4G/5G)","OPPO F21S PRO (4G/5G)","OPPO A74 (4G)","OPPO A78 (4G)","OPPO A93","OPPO A94 (4G/5G)","OPPO A95 (4G/5G)","REALME 7 PRO","REALME X7","REALME V15 (5G)","REALME Q2 PRO","REALME 8","REALME 8 PRO","REALME 9 PRO+","REALME 9 (4G)","REALME 10 (4G)","REALME 11 (4G)","RENO 8 (4G/5G)","RENO 8 LITE","RENO 8T (4G)","RENO 8Z","RENO 7 (4G/5G)","RENO 7 SE (5G)","RENO 7Z (5G)","RENO 7 LITE","RENO 6Z","RENO 6 LITE","RENO 5 LITE","RENO 4 LITE","RENO 5Z","RENO 5F","RENO 4 SE","RENO 4F","RENO 4 (4G/5G)","RENO 2","OPPO F17 PRO","1+ NORD CE2","OPPO Find X5 Lite (5G)","NARZO 50 PRO (5G)","NARZO 60"],"20":["SAMSUNG A21","SAMSUNG A21S","SAMSUNG F52","OPPO A5 PRO","OPPO A53","OPPO A53S","OPPO A32","OPPO A33","OPPO A54","OPPO A55 4G","OPPO A36","OPPO A76","OPPO A96","REDMI NOTE 11 5G","REDMI NOTE 11T 5G","REDMI NOTE 11S 5G","REDMI NOTE 10 PRO 5G","REALME 6 PRO","REALME 7I","REALME 8I","REALME 9I","REALME C17","REALME 9 PRO","NARZO 50","VIVO V25","REALME Q5","1+ NORD N100","1+ NORD CE2 LITE","1+ NORD 3 5G","REALME GT NEO2","REALME GT NEO 3","REALME GT NEO 3T","POCO M4 PRO 5G","INFINIX HOT X8 4G","INFINIX HOT X8A 4G","HUAWEI NOVA Y90 4G","REDMI NOTE 11T PRO","REDMI K50I"],"21":["VIVO T5X 5G","OPPO A6X 5G"],"22":["OPPO F33","OPPO F33 PRO"],"23":["REDMI 9A","REDMI 9C","REDMI 9i","REDMI 9 ACTIV","XIAOMI POCO C3","XIAOMI POCO C31","REDMI M23 5G","REALME C31","REDMI 10A","REDMI A1","REDMI A1+","POCO C50","REDMI A2","REDMI A2+","POCO C51","POCO F13","POCO M13 (India)"],"24":["SAMSUNG A31","SAMSUNG A32 4G","SAMSUNG A33 5G","SAMSUNG T2","SAMSUNG M22","SAMSUNG M32 4G","SAMSUNG F22","IQOO Z6 PRO","VIVO T1 PRO","VIVO Y100","VIVO Y100A","SAMSUNG A22 4G"],"25":["REALME 12 4G","REALME 12+ 5G","REALME 13 4G","REALME 14","REALME 14T","REALME P1 5G","REALME P3","NARZO 70","NARZO 70 PRO 5G","HUAWEI NOVA 12SE","OPPO RENO 12F (4G/5G)","OPPO F27 5G","REDMI NOTE 14 5G","VIVO Y200 4G","VIVO V50 LITE (4G/5G)","1+ 10T","1+ 10R","REALME GT 2 PRO","REALME GT NEO 3","1+ ACE","1+ ACE PRO","VIVO V27E","POCO F5 PRO","IQOO 7 5G (India)","OPPO K11","REDMI NOTE 13 4G","1+ NORD CE 4","1+ NORD 4","1+ NORD CE4 LITE","VIVO Y200 5G","REDMI K12","REDMI K50","REDMI K50 PRO","POCO X5 PRO"],"26":["SAMSUNG A05","SAMSUNG F05","REDMI 13C (4G/5G)","POCO C65","REDMI 13R","POCO M6 5G","REDMI M05","REDMI A06"],"27":["REDMI 14C","REDMI 14R","REDMI A3 PRO","REDMI A4","REDMI A5 (4G)","POCO C71","POCO C75","POCO M7"],"28":["REDMI 15C GLOBAL","POCO C85"]};
+const TEMP_MODELS=Object.entries(TEMP_GROUPS).flatMap(([g,ms])=>ms.map(m=>({g:+g,m})));
 let jobs=[],pics={},set={fb:'',days:7,shop:'Gowin Mobiles',wd:90},cur={photos:[],idp:[],sig:''},view='list',filt='Active',q='',nt=0;
 const CK=['Screen crack','Body dent/scratch','Back glass crack','Buttons damaged','Camera damaged','Charging port loose','Display lines/spots','Speaker/Mic issue'];
 const LQ=['Liquid damage (water marks)','Liquid indicator red','Switch on aagala','Battery swollen'];
@@ -66,7 +69,21 @@ return `நன்றி ${n}! 🙏\nஉங்கள் ${m} (ஜாப் ${c}) 
 function sendBtns(j,t){return `<div class="row"><button class="w" onclick="wa(J(${j.id}),msg(J(${j.id}),'${t}'))">WhatsApp</button><button class="g" onclick="sms(J(${j.id}),msg(J(${j.id}),'${t}'))">SMS</button></div>`}
 function pend(){const n=Date.now();return jobs.filter(j=>j.status=='Ready'&&j.readyAt&&n-j.readyAt>set.days*864e5)}
 function render(){const a=$('#app');if(!ready)return;$('#cnt').textContent=jobs.filter(j=>j.status!='Delivered').length+' open ☁️';
-if(view=='list')return list(a);if(view=='new')return form(a);if(view=='det')return det(a);set_(a)}
+if(view=='list')return list(a);if(view=='new')return form(a);if(view=='det')return det(a);if(view=='temp')return tempFinder(a);set_(a)}
+function tempFinder(a){
+const qv=(window.tempQ||'').trim().toUpperCase();
+const group=(window.tempG||'').trim();
+let R=TEMP_MODELS.filter(x=>(!qv||x.m.toUpperCase().includes(qv))&&(!group||String(x.g)==group));
+R=R.slice(0,120);
+a.innerHTML=`<div class="card"><div class="tf"><b style="font-size:18px">🛡️ Tempered Finder</b><div class="tr"><span class="sm">${TEMP_MODELS.length} compatible entries · ${Object.keys(TEMP_GROUPS).length} groups</span></div><input id="tq" placeholder="🔍 Search model e.g. VIVO Y200 / OPPO RENO 13" value="${esc(window.tempQ||'')}" oninput="window.tempQ=this.value;tempFinder($('#app'));$('#tq').focus()"><select onchange="window.tempG=this.value;tempFinder($('#app'))"><option value="">All Groups</option>${Object.keys(TEMP_GROUPS).map(g=>`<option value="${g}" ${String(window.tempG||'')==g?'selected':''}>Group ${g}</option>`).join('')}</select></div></div>`+
+(R.length?R.map(x=>`<div class="card" style="cursor:pointer" onclick="pickTemp(${JSON.stringify(x.m)})"><div class="tr"><b>${esc(x.m)}</b><span class="tg">GROUP ${x.g}</span></div><div class="sm">🛡️ Compatible tempered glass · Tap to add</div></div>`).join(''):`<div class="card"><b>No matching model</b><p class="sm">இந்த list-ல் exact match இல்லை. வேறு model name search பண்ணுங்கள்.</p></div>`);
+}
+function pickTemp(model){
+const j=cur.id?J(cur.id):null;
+if(j){j.tmp='paid';j.tmpQ=1;j.tmpP=N(j.tmpP);j.tmpModel=model;put(j);alert(model+' → Temper added to job '+j.code);go('det',j.id);return}
+if(confirm(model+'\n\nNew Job-ல் model ஆக set செய்யவா?')){go('new');setTimeout(()=>{const e=$('#m');if(e){e.value=model;e.dispatchEvent(new Event('input'));}},0)}
+}
+
 function list(a){const p=pend();
 let L=jobs.filter(j=>(filt=='Active'?j.status!='Delivered':filt=='All'||j.status==filt)&&(!q||(j.name+j.phone+j.code+j.model).toLowerCase().includes(q.toLowerCase())));
 a.innerHTML=(p.length?`<div class="alert">🔔 ${p.length} mobile ${set.days}+ days-a customer edukala:<br>${p.map(j=>`<b>${j.code}</b> ${esc(j.name)}`).join(', ')}<br><button class="g" style="background:#fff;margin-top:6px" onclick="remindAll()">Reminder send</button></div>`:'')+
@@ -76,7 +93,7 @@ function remindAll(){const p=pend();if(!p.length)return;const j=p[0];wa(j,`Vanak
 function form(a){cur={photos:[],idp:[],sig:''};
 a.innerHTML=`<div class="card"><b>New Job</b><br><label>Customer name</label><input id="n"><label>Phone</label><input id="p" type="tel" maxlength="10">
 <div class="row"><div><label>Category</label><select id="cat"><option>SERVICE</option><option>ACCESSORIES</option></select></div><div><label>IMEI (optional)</label><input id="imei"></div></div>
-<label>Model (Brand + Model)</label><input id="m"><label>Problem</label><textarea id="pr" rows="2"></textarea>
+<label>Model (Brand + Model)</label><div class="row"><input id="m"><button type="button" class="g" onclick="window.tempQ=$('#m').value;go('temp')">🛡️ Find</button></div><label>Problem</label><textarea id="pr" rows="2"></textarea>
 <label>Lock/Pattern (optional)</label><input id="lk">
 <div class="row"><div><label>Estimate ₹</label><input id="tt" type="number"></div><div><label>Advance ₹ (cash)</label><input id="ad" type="number"></div></div></div>
 <div class="card"><b>Physical condition ✔</b><div class="chk">${CK.map(c=>`<label><input type="checkbox" name="ck" value="${c}">${c}</label>`).join('')}</div>
@@ -110,7 +127,7 @@ ${j.dead?'<p style="color:var(--er)"><b>⚠️ Dead risk accepted</b></p>'+(sg?`
 <label>Work done (DESCRIPTION)</label><input value="${esc(j.work)}" onchange="upd(${j.id},'work',this.value)">
 <label>🔧 Spare changed (part name)</label><input value="${esc(j.part)}" placeholder="Display / Battery..." onchange="upd(${j.id},'part',this.value)">
 <label>🛡️ Spare warranty</label><select onchange="upd(${j.id},'wdays',+this.value)">${[[0,'No warranty'],[90,'90 days'],[180,'180 days']].map(o=>`<option value="${o[0]}" ${wdy(j)==o[0]?'selected':''}>${o[1]}</option>`).join('')}</select>
-<label>🛡️ Temper glass</label><select onchange="upd(${j.id},'tmp',this.value)">${[['','No temper'],['free','Free (இலவசம்)'],['paid','Cost (paid)']].map(o=>`<option value="${o[0]}" ${(j.tmp||'')==o[0]?'selected':''}>${o[1]}</option>`).join('')}</select>
+<label>🛡️ Temper glass</label><select onchange="upd(${j.id},'tmp',this.value)">${[['','No temper'],['free','Free (இலவசம்)'],['paid','Cost (paid)']].map(o=>`<option value="${o[0]}" ${(j.tmp||'')==o[0]?'selected':''}>${o[1]}</option>`).join('')}</select><button class="g" onclick="go('temp')">🔍 Find Temper Model</button>
 ${j.tmp?`<div class="row"><div><label>Temper qty</label><input type="number" value="${j.tmpQ||1}" onchange="upd(${j.id},'tmpQ',+this.value)"></div>${j.tmp=='paid'?`<div><label>Temper price ₹</label><input type="number" value="${N(j.tmpP)}" onchange="upd(${j.id},'tmpP',+this.value)"></div>`:''}</div>`:''}
 <label>🎧 Accessories sale</label>${(j.acc||[]).map((x,i)=>`<div class="row" style="align-items:center"><span>${esc(x.n)} – ₹${N(x.p)}</span><button class="g" style="flex:0 0 60px" onclick="delAcc(${j.id},${i})">✕</button></div>`).join('')}
 <div class="row"><input id="an" placeholder="Item (cable, case...)"><input id="ap" type="number" placeholder="₹ price"></div><button class="g" onclick="addAcc(${j.id})">➕ Add accessory</button>
@@ -156,7 +173,7 @@ function set_(a){a.innerHTML=`<div class="card"><b>Settings</b><label>Shop name<
 <div class="card"><b>📥 Pazhaya Excel import</b><p class="sm">GOWIN SERVICE REPORT .xlsx select pannunga – ellaa jobs-um inga varum (already irukkura job codes skip aagum).</p><input type="file" accept=".xlsx,.xls" onchange="imp(this)"></div>
 <a href="https://docs.google.com/spreadsheets/d/${SID}" target="_blank" style="color:var(--pr)">📄 Google Sheet open pannunga</a><p class="sm">☁️ Data Google Sheet + Drive-la save aagum. 20 sec-ku oru thadava sync aagum.</p>`}
 let ready=false,tok='',tex=0,tc=null,last='',SID=localStorage.gm_sid||'',FID=localStorage.gm_fid||'';
-const CID=()=>localStorage.gm_cid||'',SCOPE='https://www.googleapis.com/auth/drive.file',SH='https://sheets.googleapis.com/v4/spreadsheets/',DR='https://www.googleapis.com/drive/v3/files',JH={'Content-Type':'application/json'};
+const CID=()=>String(localStorage.gm_cid||'').replace(/^https?:\/\//,'').trim(),SCOPE='https://www.googleapis.com/auth/drive.file',SH='https://sheets.googleapis.com/v4/spreadsheets/',DR='https://www.googleapis.com/drive/v3/files',JH={'Content-Type':'application/json'};
 const HDR=['S.NO','DATE','JOB CODE','IMEI','CUSTOMER NAME','CONTACT NO','CATEGARY','MODEL','PROBLEM','PRICES','CASH','UPI','DISCOUNT','DESCRIPTION','STATUS','HANDOVER','SPARE','F','APP DATA (touch pannaadheenga)'];
 function tk(){if(tok&&Date.now()<tex)return Promise.resolve(tok);return new Promise((res,rej)=>{tc.callback=r=>{if(r.error)return rej(r);tok=r.access_token;tex=Date.now()+r.expires_in*1000-60000;res(tok)};tc.error_callback=rej;tc.requestAccessToken({prompt:''})})}
 async function api(u,o={}){const r=await fetch(u,{...o,headers:{Authorization:'Bearer '+await tk(),...(o.headers||{})}});if(!r.ok)throw new Error((await r.text()).slice(0,200));return r}
@@ -188,42 +205,7 @@ await api(`${SH}${SID}/values/SERVICE!A1:S1?valueInputOption=RAW`,{method:'PUT',
 try{const s=await(await api(`${SH}${SID}/values/SETTINGS!A1`)).json();if(s.values)set={...set,...JSON.parse(s.values[0][0])}}catch(e){}
 await loadAll();ready=true;render();setInterval(()=>loadAll().catch(()=>{}),20000);
 try{if(pend().length)Notification.requestPermission().then(p=>{if(p=='granted')new Notification('Gowin Mobiles',{body:pend().length+' mobile pending pickup'})})}catch(e){}}
-async function signin(){
-try{
-  if(!window.google||!google.accounts||!google.accounts.oauth2)
-    throw new Error('Google Sign-In library load aagala. Internet connection check pannunga.');
-
-  /* Android / multiple Google accounts:
-     Always ask Google to show the account chooser on a fresh sign-in.
-     PC flow otherwise remains unchanged. */
-  tok=''; tex=0;
-  tc=google.accounts.oauth2.initTokenClient({
-    client_id:CID(),
-    scope:SCOPE,
-    callback:()=>{}
-  });
-
-  tc.callback=async r=>{
-    if(r.error){
-      alert('Google login failed: '+(r.error_description||r.error));
-      return;
-    }
-    tok=r.access_token;
-    tex=Date.now()+(r.expires_in||3600)*1000-60000;
-    try{
-      await boot();
-    }catch(e){
-      alert('Google account access error: '+(e.message||e));
-    }
-  };
-
-  /* Force account selection when multiple Google accounts exist. */
-  tc.requestAccessToken({prompt:'select_account'});
-}catch(e){
-  alert('Sign in failed: '+(e.message||e.error||e.type||'try again'));
-}}
-function gate(){$('#app').innerHTML=CID()?`<div class="card"><b>📱 Gowin Mobiles</b><p class="sm">Google account-la sign in pannunga. Phone & PC rendulaiyum same account use pannunga.</p><button onclick="signin()">🔐 Sign in / Select Google Account</button>
-<button class="g" onclick="tok='';tex=0;tc=null;alert('Next login-la Google account chooser varum.')">🔄 Switch Google Account</button>
-<button class="g" onclick="localStorage.removeItem('gm_cid');gate()">Client ID maathanum</button></div>`:`<div class="card"><b>Setup (oru thadava)</b><p class="sm">Google Cloud-la create panna OAuth Client ID inga paste pannunga.</p><input id="cid" placeholder="xxxx.apps.googleusercontent.com"><button onclick="localStorage.gm_cid=$('#cid').value.trim();gate()">Save</button></div>`}
+async function signin(){try{tc=google.accounts.oauth2.initTokenClient({client_id:CID(),scope:SCOPE,callback:()=>{}});await tk();await boot()}catch(e){alert('Sign in failed: '+(e.message||e.error||e.type||'try again'))}}
+function gate(){$('#app').innerHTML=CID()?`<div class="card"><b>📱 Gowin Mobiles</b><p class="sm">Google account-la sign in pannunga. Phone & PC rendulaiyum same account use pannunga.</p><button onclick="signin()">🔐 Sign in with Google</button><button class="g" onclick="localStorage.removeItem('gm_cid');gate()">Client ID maathanum</button></div>`:`<div class="card"><b>Setup (oru thadava)</b><p class="sm">Google Cloud-la create panna OAuth Client ID inga paste pannunga.</p><input id="cid" placeholder="xxxx.apps.googleusercontent.com"><button onclick="localStorage.gm_cid=$('#cid').value.trim();gate()">Save</button></div>`}
 gate();
 </script></body></html>
