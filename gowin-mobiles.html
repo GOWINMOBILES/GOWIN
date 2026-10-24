@@ -31,6 +31,32 @@ canvas{width:100%;height:120px;border:1px dashed var(--mu);border-radius:8px;bac
 nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom,0px)}
 nav button{background:none;color:var(--tx);border:0;border-radius:0;margin:0}
 .sm{font-size:13px;color:var(--mu)}
+/* Responsive CRM layout: compact touch UI on phones, wider workspace on PC */
+header{position:sticky;top:0;z-index:20;align-items:center;min-height:56px;box-shadow:0 2px 12px #00000012}
+main{width:100%;padding:14px;max-width:1280px}
+input,select,textarea,button{min-height:42px}
+textarea{resize:vertical}
+.card{box-shadow:0 2px 10px #00000008}
+#app> .card:focus-within{border-color:var(--pr)}
+nav{z-index:30;justify-content:space-around;backdrop-filter:blur(14px)}
+nav button{flex:1;min-height:54px;font-size:13px}
+@media(min-width:760px){
+ body{padding-bottom:20px}
+ header{padding:16px 28px;font-size:20px}
+ main{padding:24px 28px 32px}
+ nav{position:sticky;top:56px;bottom:auto;left:auto;right:auto;max-width:1280px;margin:0 auto;padding:8px 20px;border:1px solid var(--bd);border-radius:0 0 14px 14px;box-shadow:0 4px 16px #00000008}
+ nav button{flex:0 0 auto;min-width:150px;border-radius:8px!important}
+ #app{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+ #app> .card,#app> .alert,#app> input,#app> select,#app> a,#app> p{margin:0;min-width:0}
+ #app> .alert{grid-column:1/-1}
+ #app> input#sq,#app> select,#app>button.g{grid-column:1/-1}
+ #app> .card:has(> b:first-child){min-width:0}
+ #app> .card:has(button[onclick*="PDF Invoice"]){grid-column:1/-1}
+ #app> button#cb{grid-column:1/-1}
+}
+@media(min-width:1100px){#app{grid-template-columns:repeat(3,minmax(0,1fr))}#app> .alert,#app> input#sq,#app> select{grid-column:1/-1}}
+@media(max-width:759px){header{font-size:16px}main{padding:10px}nav button{font-size:12px;padding:8px 3px}.card{padding:11px}}
+.sm{font-size:13px;color:var(--mu)}
 </style></head><body>
 <header><span>📱 GOWIN MOBILES</span><span id="cnt"></span></header>
 <main id="app"></main>
@@ -184,12 +210,12 @@ for(const x of(await(await api(pq(id))).json()).files||[])await api(`${DR}/${x.i
 function addAcc(id){const n=$('#an').value.trim(),p=N($('#ap').value);if(!n)return alert('Item name enter pannunga');const j=J(id);j.acc=[...(j.acc||[]),{n,p}];put(j)}
 function delAcc(id,i){const j=J(id);j.acc=j.acc.filter((_,k)=>k!=i);put(j)}
 async function boot(){if(!SID){const q=encodeURIComponent("name='GOWIN SERVICE REPORT 2026' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false"),f=(await(await api(`${DR}?q=${q}&fields=files(id)`)).json()).files;
-if(f.length)SID=f[0].id;else{SID=(await(await api(SH.slice(0,-1),{method:'POST',headers:JH,body:JSON.stringify({properties:{title:'GOWIN SERVICE REPORT 2026'},sheets:[{properties:{title:'SERVICE'}},{properties:{title:'SETTINGS'}}]})})).json()).spreadsheetId;
-await api(`${SH}${SID}/values/SERVICE!A1:S1?valueInputOption=RAW`,{method:'PUT',headers:JH,body:JSON.stringify({values:[HDR]})})}localStorage.gm_sid=SID}
+if(!f.length)throw new Error('Existing GOWIN SERVICE REPORT 2026 sheet kidaikkala. Data safety-kaga pudhu sheet create pannala. Same Google account/Drive access check pannunga.');
+SID=f[0].id;localStorage.gm_sid=SID}
 try{const s=await(await api(`${SH}${SID}/values/SETTINGS!A1`)).json();if(s.values)set={...set,...JSON.parse(s.values[0][0])}}catch(e){}
 await loadAll();ready=true;render();setInterval(()=>loadAll().catch(()=>{}),20000);
 try{if(pend().length)Notification.requestPermission().then(p=>{if(p=='granted')new Notification('Gowin Mobiles',{body:pend().length+' mobile pending pickup'})})}catch(e){}}
-async function signin(){try{tc=google.accounts.oauth2.initTokenClient({client_id:CID(),scope:SCOPE,callback:()=>{}});await tk();await boot()}catch(e){alert('Sign in failed: '+(e.message||e.error||e.type||'try again'))}}
+async function signin(){try{if(!window.google||!google.accounts||!google.accounts.oauth2)throw new Error('Google Sign-In library load aagala. Internet check pannunga.');tok='';tex=0;await new Promise((resolve,reject)=>{tc=google.accounts.oauth2.initTokenClient({client_id:CID(),scope:SCOPE,callback:async r=>{if(r.error){reject(new Error(r.error_description||r.error));return}tok=r.access_token;tex=Date.now()+(r.expires_in||3600)*1000-60000;try{await boot();resolve()}catch(e){reject(e)}},error_callback:reject});tc.requestAccessToken({prompt:'select_account'})})}catch(e){alert('Sign in failed: '+(e.message||e.error||e.type||'try again'))}}
 function gate(){if(localStorage.gm_edit_cid==='1'){$('#app').innerHTML=`<div class="card"><b>Google OAuth Client ID</b><p class="sm">Client ID mattum paste pannunga. Secret/password thevai illai.</p><input id="cid" value="${esc(localStorage.gm_cid||DEFAULT_CID)}" placeholder="xxxx.apps.googleusercontent.com"><button onclick="const v=$('#cid').value.trim();if(!v.endsWith('.apps.googleusercontent.com')){alert('Valid Google OAuth Client ID enter pannunga');return}localStorage.gm_cid=v;localStorage.removeItem('gm_edit_cid');gate()">Save Client ID</button><button class="g" onclick="localStorage.removeItem('gm_edit_cid');gate()">Cancel</button></div>`;return}$('#app').innerHTML=`<div class="card"><b>📱 Gowin Mobiles</b><p class="sm">Google account-la sign in pannunga. Phone & PC rendulaiyum same account use pannunga.</p><button onclick="signin()">🔐 Sign in with Google</button><button class="g" onclick="localStorage.gm_edit_cid='1';gate()">Client ID maathanum</button></div>`}
 gate();
 </script></body></html>
