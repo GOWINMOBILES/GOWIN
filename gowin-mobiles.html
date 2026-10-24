@@ -31,32 +31,37 @@ canvas{width:100%;height:120px;border:1px dashed var(--mu);border-radius:8px;bac
 nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom,0px)}
 nav button{background:none;color:var(--tx);border:0;border-radius:0;margin:0}
 .sm{font-size:13px;color:var(--mu)}
-/* Responsive CRM layout: compact touch UI on phones, wider workspace on PC */
-header{position:sticky;top:0;z-index:20;align-items:center;min-height:56px;box-shadow:0 2px 12px #00000012}
-main{width:100%;padding:14px;max-width:1280px}
-input,select,textarea,button{min-height:42px}
-textarea{resize:vertical}
-.card{box-shadow:0 2px 10px #00000008}
-#app> .card:focus-within{border-color:var(--pr)}
-nav{z-index:30;justify-content:space-around;backdrop-filter:blur(14px)}
-nav button{flex:1;min-height:54px;font-size:13px}
-@media(min-width:760px){
- body{padding-bottom:20px}
- header{padding:16px 28px;font-size:20px}
- main{padding:24px 28px 32px}
- nav{position:sticky;top:56px;bottom:auto;left:auto;right:auto;max-width:1280px;margin:0 auto;padding:8px 20px;border:1px solid var(--bd);border-radius:0 0 14px 14px;box-shadow:0 4px 16px #00000008}
- nav button{flex:0 0 auto;min-width:150px;border-radius:8px!important}
- #app{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
- #app> .card,#app> .alert,#app> input,#app> select,#app> a,#app> p{margin:0;min-width:0}
- #app> .alert{grid-column:1/-1}
- #app> input#sq,#app> select,#app>button.g{grid-column:1/-1}
- #app> .card:has(> b:first-child){min-width:0}
- #app> .card:has(button[onclick*="PDF Invoice"]){grid-column:1/-1}
- #app> button#cb{grid-column:1/-1}
+/* GOWIN premium CRM responsive layout */
+:root{--pr:#3867f5}
+header{background:linear-gradient(110deg,#172554,#315efb 65%,#477cff);min-height:62px;padding:16px 24px;align-items:center;letter-spacing:.2px;box-shadow:0 4px 20px #08133322}
+header span:first-child{font-size:19px;letter-spacing:.5px}
+main{max-width:100%;padding:22px 26px 34px}
+.card{box-shadow:0 3px 14px #101a3510;transition:transform .16s,border-color .16s}
+#app>input,#app>select,#app>button.g{max-width:100%}
+#app>.card[onclick]{cursor:pointer}
+#app>.card[onclick]:hover{border-color:var(--pr);transform:translateY(-1px)}
+nav{z-index:20}
+@media(min-width:900px){
+ body{padding-bottom:0;min-height:100vh;background:var(--bg)}
+ header{padding-left:270px;padding-right:30px}
+ main{margin-left:238px;width:calc(100% - 238px);padding:28px 34px 42px}
+ nav{top:62px;bottom:0;left:0;right:auto;width:238px;display:flex;flex-direction:column;justify-content:flex-start;gap:7px;padding:22px 14px;background:var(--card);border-top:0;border-right:1px solid var(--bd);box-shadow:5px 0 24px #101a3508}
+ nav button{width:100%;text-align:left;padding:15px 16px;border-radius:10px;margin:0;font-size:15px;font-weight:600}
+ nav button:hover{background:color-mix(in srgb,var(--pr) 10%,transparent);color:var(--pr)}
+ #app>input#sq{width:calc(68% - 10px);display:inline-block;vertical-align:middle;margin-right:12px;padding:13px 15px}
+ #app>input#sq+select{width:32%;display:inline-block;vertical-align:middle;padding:13px 15px}
+ #app>button.g{width:auto;min-width:260px;margin:8px 0 18px;padding:12px 18px}
+ #app>.card[onclick]{display:inline-block;vertical-align:top;width:calc(33.333% - 12px);min-height:132px;margin:6px 12px 6px 0;padding:18px;border-radius:14px}
+ #app>.alert{padding:16px 20px;border-radius:14px;margin-bottom:20px}
+ #app>.alert button{max-width:220px}
+ #app>.card:not([onclick]){padding:20px;margin-bottom:16px;border-radius:14px}
+ #app label{font-size:13px}
+ #app input,#app select,#app textarea{padding:12px 13px}
+ #app button{padding:12px 16px}
+ #app .row{gap:14px}
 }
-@media(min-width:1100px){#app{grid-template-columns:repeat(3,minmax(0,1fr))}#app> .alert,#app> input#sq,#app> select{grid-column:1/-1}}
-@media(max-width:759px){header{font-size:16px}main{padding:10px}nav button{font-size:12px;padding:8px 3px}.card{padding:11px}}
-.sm{font-size:13px;color:var(--mu)}
+@media(min-width:1300px){main{padding-left:44px;padding-right:44px}#app>.card[onclick]{width:calc(25% - 14px)}}
+@media(max-width:899px){header{padding:12px 14px}main{padding:12px}nav{padding-bottom:env(safe-area-inset-bottom,0px)}}
 </style></head><body>
 <header><span>📱 GOWIN MOBILES</span><span id="cnt"></span></header>
 <main id="app"></main>
@@ -96,6 +101,7 @@ if(view=='list')return list(a);if(view=='new')return form(a);if(view=='det')retu
 function list(a){const p=pend();
 let L=jobs.filter(j=>(filt=='Active'?j.status!='Delivered':filt=='All'||j.status==filt)&&(!q||(j.name+j.phone+j.code+j.model).toLowerCase().includes(q.toLowerCase())));
 a.innerHTML=(p.length?`<div class="alert">🔔 ${p.length} mobile ${set.days}+ days-a customer edukala:<br>${p.map(j=>`<b>${j.code}</b> ${esc(j.name)}`).join(', ')}<br><button class="g" style="background:#fff;margin-top:6px" onclick="remindAll()">Reminder send</button></div>`:'')+
+`<div class="crm-kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px;margin:0 0 16px">${[['Active',jobs.filter(j=>j.status!='Delivered').length,'Open jobs'],['Received',jobs.filter(j=>j.status=='Received').length,'Awaiting repair'],['Repairing',jobs.filter(j=>j.status=='Progress').length,'In progress'],['Ready',jobs.filter(j=>j.status=='Ready').length,'Pickup pending']].map((x,i)=>`<div class="card" style="margin:0;padding:15px 16px;border-radius:13px"><div class="sm">${x[2]}</div><div style="font-size:25px;font-weight:750;line-height:1.35;color:var(--pr)">${x[1]}</div><div style="font-size:12px;color:var(--mu)">${x[0]}</div></div>`).join('')}</div>`+
 `<input id="sq" placeholder="🔍 Name / phone / job code" value="${esc(q)}" oninput="q=this.value;list($('#app'));$('#sq').focus()"><select onchange="filt=this.value;list($('#app'))">${['Active','All','Received','Progress','Ready','Delivered'].map(s=>`<option ${s==filt?'selected':''}>${s}</option>`).join('')}</select><button class="g" onclick="exp()">📊 Excel download (GOWIN SERVICE REPORT)</button>`+
 (L.map(j=>`<div class="card" onclick="go('det',${j.id})"><b>${j.code}</b> <span class="tag ${j.status}">${j.status}</span> ${wdy(j)?'🛡️':''}<br>${esc(j.name)} · ${esc(j.phone)}<br><span class="sm">${esc(j.model)} – ${esc(j.problem)}</span></div>`).join('')||'<p class="sm">Jobs illa. ➕ New Job click pannunga.</p>')}
 function remindAll(){const p=pend();if(!p.length)return;const j=p[0];wa(j,`Vanakkam ${j.name}, ungal ${j.model} (Job ${j.code}) ready-a irukku. Seekiram vanthu eduthukkonga. - ${set.shop}`);if(p.length>1)alert('Matha customers-ku job open panni send pannunga.')}
@@ -210,12 +216,12 @@ for(const x of(await(await api(pq(id))).json()).files||[])await api(`${DR}/${x.i
 function addAcc(id){const n=$('#an').value.trim(),p=N($('#ap').value);if(!n)return alert('Item name enter pannunga');const j=J(id);j.acc=[...(j.acc||[]),{n,p}];put(j)}
 function delAcc(id,i){const j=J(id);j.acc=j.acc.filter((_,k)=>k!=i);put(j)}
 async function boot(){if(!SID){const q=encodeURIComponent("name='GOWIN SERVICE REPORT 2026' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false"),f=(await(await api(`${DR}?q=${q}&fields=files(id)`)).json()).files;
-if(!f.length)throw new Error('Existing GOWIN SERVICE REPORT 2026 sheet kidaikkala. Data safety-kaga pudhu sheet create pannala. Same Google account/Drive access check pannunga.');
-SID=f[0].id;localStorage.gm_sid=SID}
+if(f.length)SID=f[0].id;else{SID=(await(await api(SH.slice(0,-1),{method:'POST',headers:JH,body:JSON.stringify({properties:{title:'GOWIN SERVICE REPORT 2026'},sheets:[{properties:{title:'SERVICE'}},{properties:{title:'SETTINGS'}}]})})).json()).spreadsheetId;
+await api(`${SH}${SID}/values/SERVICE!A1:S1?valueInputOption=RAW`,{method:'PUT',headers:JH,body:JSON.stringify({values:[HDR]})})}localStorage.gm_sid=SID}
 try{const s=await(await api(`${SH}${SID}/values/SETTINGS!A1`)).json();if(s.values)set={...set,...JSON.parse(s.values[0][0])}}catch(e){}
 await loadAll();ready=true;render();setInterval(()=>loadAll().catch(()=>{}),20000);
 try{if(pend().length)Notification.requestPermission().then(p=>{if(p=='granted')new Notification('Gowin Mobiles',{body:pend().length+' mobile pending pickup'})})}catch(e){}}
-async function signin(){try{if(!window.google||!google.accounts||!google.accounts.oauth2)throw new Error('Google Sign-In library load aagala. Internet check pannunga.');tok='';tex=0;await new Promise((resolve,reject)=>{tc=google.accounts.oauth2.initTokenClient({client_id:CID(),scope:SCOPE,callback:async r=>{if(r.error){reject(new Error(r.error_description||r.error));return}tok=r.access_token;tex=Date.now()+(r.expires_in||3600)*1000-60000;try{await boot();resolve()}catch(e){reject(e)}},error_callback:reject});tc.requestAccessToken({prompt:'select_account'})})}catch(e){alert('Sign in failed: '+(e.message||e.error||e.type||'try again'))}}
+async function signin(){try{tc=google.accounts.oauth2.initTokenClient({client_id:CID(),scope:SCOPE,callback:()=>{}});await tk();await boot()}catch(e){alert('Sign in failed: '+(e.message||e.error||e.type||'try again'))}}
 function gate(){if(localStorage.gm_edit_cid==='1'){$('#app').innerHTML=`<div class="card"><b>Google OAuth Client ID</b><p class="sm">Client ID mattum paste pannunga. Secret/password thevai illai.</p><input id="cid" value="${esc(localStorage.gm_cid||DEFAULT_CID)}" placeholder="xxxx.apps.googleusercontent.com"><button onclick="const v=$('#cid').value.trim();if(!v.endsWith('.apps.googleusercontent.com')){alert('Valid Google OAuth Client ID enter pannunga');return}localStorage.gm_cid=v;localStorage.removeItem('gm_edit_cid');gate()">Save Client ID</button><button class="g" onclick="localStorage.removeItem('gm_edit_cid');gate()">Cancel</button></div>`;return}$('#app').innerHTML=`<div class="card"><b>📱 Gowin Mobiles</b><p class="sm">Google account-la sign in pannunga. Phone & PC rendulaiyum same account use pannunga.</p><button onclick="signin()">🔐 Sign in with Google</button><button class="g" onclick="localStorage.gm_edit_cid='1';gate()">Client ID maathanum</button></div>`}
 gate();
 </script></body></html>
