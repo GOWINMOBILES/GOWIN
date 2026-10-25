@@ -288,8 +288,8 @@ function set_(a){a.innerHTML=`<div class="card"><b>Settings</b><label>Shop name<
 let ready=false,tok='',tex=0,tc=null,last='',SID=localStorage.gm_sid||'',FID=localStorage.gm_fid||'';
 const CID=()=>String(localStorage.gm_cid||'').replace(/^https?:\/\//,'').trim(),SCOPE='https://www.googleapis.com/auth/drive.file',SH='https://sheets.googleapis.com/v4/spreadsheets/',DR='https://www.googleapis.com/drive/v3/files',JH={'Content-Type':'application/json'};
 const HDR=['S.NO','DATE','JOB CODE','IMEI','CUSTOMER NAME','CONTACT NO','CATEGARY','MODEL','PROBLEM','PRICES','CASH','UPI','DISCOUNT','DESCRIPTION','STATUS','HANDOVER','SPARE','F','APP DATA (touch pannaadheenga)'];
-function tk(){if(tok&&Date.now()<tex)return Promise.resolve(tok);return new Promise((res,rej)=>{tc.callback=r=>{if(r.error)return rej(r);tok=r.access_token;tex=Date.now()+r.expires_in*1000-60000;res(tok)};tc.error_callback=rej;tc.requestAccessToken({prompt:''})})}
-async function api(u,o={}){const r=await fetch(u,{...o,headers:{Authorization:'Bearer '+await tk(),...(o.headers||{})}});if(!r.ok)throw new Error((await r.text()).slice(0,200));return r}
+function getToken(){if(tok&&Date.now()<tex)return Promise.resolve(tok);return new Promise((res,rej)=>{tc.callback=r=>{if(r.error)return rej(r);tok=r.access_token;tex=Date.now()+r.expires_in*1000-60000;res(tok)};tc.error_callback=rej;tc.requestAccessToken({prompt:''})})}
+async function api(u,o={}){const r=await fetch(u,{...o,headers:{Authorization:'Bearer '+await getToken(),...(o.headers||{})}});if(!r.ok)throw new Error((await r.text()).slice(0,200));return r}
 const rowv=(j,n)=>{const r={...j};delete r._row;return[n,fd(j.date),j.code,j.imei||'',U(j.name),j.phone,j.cat,U(j.model),U(j.problem),grand(j),N(j.cash),N(j.upi),dtxt(j),U(desc(j)),SN[j.status],j.outAt?fd(j.outAt):'',N(j.spare),grand(j)-N(j.disc)-N(j.spare),JSON.stringify(r)]};
 const srt=()=>jobs.sort((a,b)=>a.date<b.date?1:-1);
 async function put(j){if(view!='new')render();try{
@@ -318,7 +318,7 @@ await api(`${SH}${SID}/values/SERVICE!A1:S1?valueInputOption=RAW`,{method:'PUT',
 try{const s=await(await api(`${SH}${SID}/values/SETTINGS!A1`)).json();if(s.values)set={...set,...JSON.parse(s.values[0][0])}}catch(e){}
 await loadAll();ready=true;render();setInterval(()=>loadAll().catch(()=>{}),20000);
 try{if(pend().length)Notification.requestPermission().then(p=>{if(p=='granted')new Notification('Gowin Mobiles',{body:pend().length+' mobile pending pickup'})})}catch(e){}}
-async function signin(){try{tc=google.accounts.oauth2.initTokenClient({client_id:CID(),scope:SCOPE,callback:()=>{}});await tk();await boot()}catch(e){alert('Sign in failed: '+(e.message||e.error||e.type||'try again'))}}
+async function signin(){try{tc=google.accounts.oauth2.initTokenClient({client_id:CID(),scope:SCOPE,callback:()=>{}});await getToken();await boot()}catch(e){alert('Sign in failed: '+(e.message||e.error||e.type||'try again'))}}
 function gate(){$('#app').innerHTML=CID()?`<div class="card"><b>📱 Gowin Mobiles</b><p class="sm">Google account-la sign in pannunga. Phone & PC rendulaiyum same account use pannunga.</p><button onclick="signin()">🔐 Sign in with Google</button><button class="g" onclick="localStorage.removeItem('gm_cid');gate()">Client ID maathanum</button></div>`:`<div class="card"><b>Setup (oru thadava)</b><p class="sm">Google Cloud-la create panna OAuth Client ID inga paste pannunga.</p><input id="cid" placeholder="xxxx.apps.googleusercontent.com"><button onclick="localStorage.gm_cid=$('#cid').value.trim();gate()">Save</button></div>`}
 gate();
 </script></body></html>
