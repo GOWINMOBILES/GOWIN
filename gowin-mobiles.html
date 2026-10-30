@@ -254,17 +254,74 @@ function localDateInput(v){const d=new Date(v||Date.now());return`${d.getFullYea
 function outDateInput(j){return localDateInput(j.outAt||Date.now())}
 function setDeliveryDate(id,v){const j=J(id);if(!v)return;j.outAt=new Date(v+'T12:00:00').getTime();put(j)}
 function st(id,s){const j=J(id);j.status=s;if(s=='Ready')j.readyAt=Date.now();if(s=='Delivered'&&!j.outAt)j.outAt=Date.now();put(j)}
-async function pdf(id){const j=J(id),{jsPDF}=window.jspdf,d=new jsPDF();let y=20;
-const L=(t,s=11,b)=>{d.setFontSize(s);d.setFont('helvetica',b?'bold':'normal');d.text(String(t),15,y);y+=s/2+3};
-L(set.shop.toUpperCase(),20,1);L('206, Kundrathur Main Rd, Kungumam Nagar,',10);L('Porur, Chennai-600116.',10);L('C.no: 9500977305',10);y+=4;L('SERVICE INVOICE',14,1);
-L(`Invoice/Job: ${j.code}     Date: ${fd(new Date())}`);L(`Customer: ${j.name}   Phone: ${j.phone}`);L(`Device: ${j.model}`);L(`Problem: ${j.problem}`);if(j.work)L(`Work done: ${j.work}`);y+=4;
-if(N(j.total))L(`Service/Repair: Rs. ${N(j.total)}`);if(j.tmp)L(`Temper glass${N(j.tmpQ)>1?' x'+N(j.tmpQ):''}: ${j.tmp=='free'?'FREE':'Rs. '+tmpT(j)}`);(j.acc||[]).forEach(x=>L(`${x.n}: Rs. ${N(x.p)}`));if(N(j.disc))L(`Discount: Rs. ${N(j.disc)}`);
-L(`Total: Rs. ${grand(j)-N(j.disc)}`,12,1);L(`Paid: Rs. ${N(j.cash)+N(j.upi)}`);L(`Balance: Rs. ${bal(j)}`,12,1);y+=4;
-if(wdy(j))L(`Warranty: ${wdy(j)} days on ${j.part||'replaced part'} (valid till ${wEnd(j)})`,11,1);
-y+=2;L('Thank you for choosing '+set.shop+'!',10);L('Warranty does not cover physical/liquid damage after delivery.',9);
-const f=new File([d.output('blob')],`${j.code}-invoice.pdf`,{type:'application/pdf'});
-if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],text:'Invoice '+j.code});return}catch(e){}}
-d.save(f.name)}
+async function pdf(id){
+ const j=J(id),{jsPDF}=window.jspdf,d=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+ const W=210,H=297,L=14,R=196,CONTENT=W-28;
+ const blue=[25,91,160],ink=[28,35,45],muted=[95,105,118],line=[218,224,231],pale=[242,247,252];
+ let y=14;
+ const money=v=>'Rs. '+N(v).toLocaleString('en-IN');
+ const txt=(v)=>String(v??'').trim()||'-';
+ const wrap=(v,w,size=9,style='normal')=>{d.setFont('helvetica',style);d.setFontSize(size);return d.splitTextToSize(txt(v),w)};
+ const rule=(yy)=>{d.setDrawColor(...line);d.setLineWidth(.25);d.line(L,yy,R,yy)};
+ const label=(t,x,yy)=>{d.setFont('helvetica','normal');d.setFontSize(7);d.setTextColor(...muted);d.text(t.toUpperCase(),x,yy)};
+ const value=(t,x,yy,w,size=9,bold=false)=>{d.setFont('helvetica',bold?'bold':'normal');d.setFontSize(size);d.setTextColor(...ink);const a=d.splitTextToSize(txt(t),w);d.text(a,x,yy);return a.length};
+ const section=(title)=>{d.setFillColor(...pale);d.roundedRect(L,y,CONTENT,7,1,1,'F');d.setFont('helvetica','bold');d.setFontSize(8);d.setTextColor(...blue);d.text(title.toUpperCase(),L+3,y+4.8);y+=11};
+ // Header
+ d.setFillColor(...ink);d.roundedRect(L,y,CONTENT,34,2,2,'F');
+ d.setTextColor(255,255,255);d.setFont('helvetica','bold');d.setFontSize(19);d.text(String(set.shop||'GOWIN MOBILES').toUpperCase(),L+5,y+9);
+ d.setFont('helvetica','normal');d.setFontSize(8);d.text('MOBILE & LAPTOP SERVICE CENTRE',L+5,y+15);
+ d.setFontSize(7.5);d.text('206, Kundrathur Main Rd, Kungumam Nagar, Porur, Chennai-600116',L+5,y+21);
+ d.text('Phone: 9500977305',L+5,y+27);
+ d.setFillColor(...blue);d.roundedRect(R-47,y+5,42,9,1,1,'F');d.setFont('helvetica','bold');d.setFontSize(8);d.setTextColor(255,255,255);d.text('SERVICE INVOICE',R-26,y+10.8,{align:'center'});
+ y+=41;
+ // Invoice meta
+ d.setFont('helvetica','bold');d.setFontSize(8);d.setTextColor(...ink);
+ d.text('INVOICE / JOB CODE',L,y);d.text('INVOICE DATE',R-48,y);
+ d.setFont('helvetica','normal');d.setFontSize(10);d.text(txt(j.code),L,y+6);d.text(fd(new Date()),R-48,y+6);
+ y+=13;rule(y);y+=7;
+ section('Customer & Device Details');
+ const col2=108;
+ label('Customer name',L,y);label('Contact number',col2,y);
+ let n1=value(j.name,L,y+5,83,9,true),n2=value(j.phone,col2,y+5,80,9,true);y+=Math.max(n1,n2)*4+7;
+ label('Device / Model',L,y);label('IMEI / Serial number',col2,y);
+ n1=value(j.model,L,y+5,83);n2=value(j.imei,col2,y+5,80);y+=Math.max(n1,n2)*4+7;
+ label('Reported complaint',L,y);n1=value(j.problem,L,y+5,CONTENT,9);y+=n1*4+7;
+ if(j.work){label('Work done / Description',L,y);n1=value(j.work,L,y+5,CONTENT,9);y+=n1*4+7;}
+ rule(y);y+=7;
+ section('Service & Charges');
+ const rows=[];
+ if(N(j.total))rows.push(['Service / Repair charges',money(j.total)]);
+ if(j.tmp)rows.push([`Temper glass${N(j.tmpQ)>1?' x'+N(j.tmpQ):''}`,j.tmp=='free'?'FREE':money(tmpT(j))]);
+ (j.acc||[]).forEach(x=>rows.push([x.n,money(x.p)]));
+ if(N(j.disc))rows.push(['Discount','- '+money(j.disc)]);
+ d.setFont('helvetica','bold');d.setFontSize(7.5);d.setTextColor(...muted);d.text('DESCRIPTION',L+2,y);d.text('AMOUNT',R-2,y,{align:'right'});y+=4;rule(y);
+ rows.forEach((r,i)=>{y+=6;d.setFont('helvetica','normal');d.setFontSize(8.5);d.setTextColor(...ink);d.text(d.splitTextToSize(txt(r[0]),CONTENT-55),L+2,y);d.text(r[1],R-2,y,{align:'right'});y+=2;rule(y);});
+ y+=7;
+ const total=grand(j)-N(j.disc),paid=N(j.cash)+N(j.upi),balance=bal(j);
+ d.setFillColor(...pale);d.roundedRect(112,y,84,32,1.5,1.5,'F');
+ label('Total amount',116,y+6);d.setFont('helvetica','bold');d.setFontSize(14);d.setTextColor(...blue);d.text(money(total),192,y+13,{align:'right'});
+ label('Paid',116,y+20);d.setFont('helvetica','normal');d.setFontSize(8.5);d.setTextColor(...ink);d.text(money(paid),192,y+20,{align:'right'});
+ label('Balance due',116,y+27);d.setFont('helvetica','bold');d.setFontSize(9);d.text(money(balance),192,y+27,{align:'right'});
+ label('PAYMENT MODE',L,y+6);value(`${N(j.cash)?'Cash '+money(j.cash):''}${N(j.cash)&&N(j.upi)?'  |  ':''}${N(j.upi)?'UPI '+money(j.upi):''}`||'Not recorded',L,y+12,88,8);
+ y+=40;
+ if(wdy(j)){
+   section('Warranty Details');
+   const warranty=`${wdy(j)} days on ${j.part||'replaced part'} (valid till ${wEnd(j)})`;
+   n1=value(warranty,L,y,CONTENT,9,true);y+=n1*4+3;
+   const terms='Warranty applies only to the specified repaired/replaced part. It does not cover physical or accidental damage, liquid/water damage, corrosion, burn marks, tampering, unauthorised repair, unrelated faults or damage after delivery. Original invoice is required for warranty claims.';
+   n1=value(terms,L,y,CONTENT,7.2);y+=n1*3.4+4;
+ } else {
+   section('Warranty');value('No warranty recorded for this service.',L,y,CONTENT,8);y+=7;
+ }
+ // Footer anchored near bottom; prevent content collision by shrinking text if necessary
+ const footerY=Math.min(Math.max(y+5,264),274);
+ rule(footerY);
+ d.setFont('helvetica','bold');d.setFontSize(9);d.setTextColor(...ink);d.text('Thank you for choosing GOWIN MOBILES!',W/2,footerY+7,{align:'center'});
+ d.setFont('helvetica','normal');d.setFontSize(7);d.setTextColor(...muted);d.text('Please keep this invoice for your records.',W/2,footerY+12,{align:'center'});
+ const f=new File([d.output('blob')],`${j.code}-invoice.pdf`,{type:'application/pdf'});
+ if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],text:'Invoice '+j.code});return}catch(e){}}
+ d.save(f.name);
+}
 const desc=j=>[j.work||'',j.tmp=='paid'?'+ TEMPER':'',...(j.acc||[]).map(x=>'+ '+x.n),wdy(j)?`(W ${wdy(j)} DAYS)`:''].filter(Boolean).join(' ');
 
 async function exp(){if(!window.XLSX)return;
