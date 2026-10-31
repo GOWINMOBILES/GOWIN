@@ -354,7 +354,12 @@ else{const r=await(await api(`${SH}${SID}/values/SERVICE!A1:append?valueInputOpt
 }catch(e){alert('Save aagala: '+e.message)}}
 async function bulk(L){await api(`${SH}${SID}/values/SERVICE!A1:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,{method:'POST',headers:JH,body:JSON.stringify({values:L.map((j,i)=>rowv(j,jobs.length+1+i))})});await loadAll()}
 async function loadAll(){const r=await(await api(`${SH}${SID}/values/SERVICE!A2:S`)).json();
-const n=(r.values||[]).map((v,i)=>{try{const j=JSON.parse(v[18]);j._row=i+2;return j}catch(e){return null}}).filter(Boolean).sort((a,b)=>a.date<b.date?1:-1);
+const n=(r.values||[]).map((v,i)=>{try{const j=JSON.parse(v[18]);j._row=i+2;
+ // SERVICE sheet Q column (index 16) is the saved SPARE amount.
+ // Older jobs may have this value in Q even when APP DATA JSON has no spare field.
+ if(v[16]!==undefined && v[16]!=='' ){j.spare=N(v[16]);j.spareEntered=true;}
+ else if(j.spare==null){j.spare=0;j.spareEntered=false;}
+ return j}catch(e){return null}}).filter(Boolean).sort((a,b)=>a.date<b.date?1:-1);
 const s=JSON.stringify(n);if(s!==last){last=s;jobs=n;if(view!='new'&&!document.activeElement?.matches('input,textarea,select'))render()}}
 async function saveSet(){try{await api(`${SH}${SID}/values/SETTINGS!A1?valueInputOption=RAW`,{method:'PUT',headers:JH,body:JSON.stringify({values:[[JSON.stringify(set)]]})})}catch(e){alert(e.message)}}
 async function fold(){if(FID)return FID;const q=encodeURIComponent("name='GOWIN PHOTOS' and mimeType='application/vnd.google-apps.folder' and trashed=false"),f=(await(await api(`${DR}?q=${q}&fields=files(id)`)).json()).files;
