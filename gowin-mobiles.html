@@ -86,7 +86,7 @@ input:not([type]),input[type=text],input[type=search],textarea{text-transform:up
 </head><body>
 <header><div class="wm">&gt; GOWIN_MOBILES<span>_</span></div><span id="cnt"></span></header>
 <main id="app"></main>
-<nav><button data-v="list" onclick="go('list')">JOBS</button><button data-v="new" onclick="go('new')">NEW</button><button data-v="temp" onclick="go('temp')">TEMPER</button><button data-v="set" onclick="go('set')">SETTINGS</button></nav>
+<nav><button data-v="list" onclick="go('list')">JOBS</button><button data-v="new" onclick="go('new')">NEW</button><button data-v="rep" onclick="go('rep')">REPORT</button><button data-v="temp" onclick="go('temp')">TEMPER</button><button data-v="set" onclick="go('set')">SETTINGS</button></nav>
 <script>
 const $=s=>document.querySelector(s),U=s=>String(s??'').toUpperCase(),N=v=>+v||0;
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -123,7 +123,7 @@ return `நன்றி ${n}! 🙏\nஉங்கள் ${m} (ஜாப் ${c}) 
 function sendBtns(j,t){return `<div class="row"><button class="w" onclick="wa(J(${j.id}),msg(J(${j.id}),'${t}'))">WhatsApp</button><button class="g" onclick="sms(J(${j.id}),msg(J(${j.id}),'${t}'))">SMS</button><button class="g" onclick="callJ(J(${j.id}))">Call</button></div>`}
 function pend(){const n=Date.now();return jobs.filter(j=>j.status=='Ready'&&j.readyAt&&n-j.readyAt>set.days*864e5)}
 function render(){const a=$('#app');if(!ready)return;document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v==(view=='det'?'list':view)));$('#cnt').textContent=jobs.filter(j=>j.status!='Delivered'&&j.status!='Giveup').length+' OPEN';
-if(view=='list')return list(a);if(view=='new')return form(a);if(view=='det')return det(a);if(view=='temp')return tempFinder(a);set_(a)}
+if(view=='list')return list(a);if(view=='new')return form(a);if(view=='det')return det(a);if(view=='rep')return report(a);if(view=='temp')return tempFinder(a);set_(a)}
 function tempFinder(a,keepFocus=false){
 const qv=(window.tempQ||'').trim().toUpperCase();
 const group=(window.tempG||'').trim();
@@ -135,6 +135,31 @@ a.innerHTML=`<div class="card"><div class="tf"><b style="font-size:18px">🛡️
 if(keepFocus){const e=$('#tq');if(e){const p=e.value.length;e.focus();try{e.setSelectionRange(p,p)}catch(_){}}}
 }
 
+
+function custList(d){const m={};if(d.length<4)return[];jobs.forEach(j=>{const p=String(j.phone||'');if(!p.startsWith(d))return;const o=m[p]=m[p]||{p,n:j.name,c:0,ms:[]};o.c++;if(j.model&&!o.ms.includes(j.model))o.ms.push(j.model)});return Object.values(m).sort((a,b)=>b.c-a.c).slice(0,3)}
+function chips(o){const e=$('#mch');if(e)e.innerHTML=o.ms.slice(0,4).map(m=>`<button class="g" type="button" style="width:auto;flex:none;margin:0 0 8px;padding:7px 10px" data-m="${esc(m)}" onclick="$('#m').value=this.dataset.m">${esc(m)}</button>`).join('')}
+function custHint(v){const d=String(v).replace(/\D/g,''),L=custList(d);window.cl=L;const e=$('#ch');if(!e)return;
+e.innerHTML=L.map((o,i)=>`<div class="card" style="border-color:var(--pr);cursor:pointer" onclick="pickCust(${i})"><div class="sm">Pazhaya customer · ${o.c} jobs · tap to fill</div><div class="tr"><b>${esc(o.n)}</b><span class="sm">${esc(o.p)}</span></div><div class="sm">Last: ${o.ms.slice(0,2).map(esc).join(' · ')||'-'}</div></div>`).join('');
+if(L.length==1&&d.length==10)chips(L[0]);else{const m=$('#mch');if(m)m.innerHTML=''}}
+function pickCust(i){const o=(window.cl||[])[i];if(!o)return;$('#n').value=o.n;$('#p').value=o.p;$('#ch').innerHTML='';chips(o)}
+function repRange(){const n=new Date(),P=window.repP||'today';let s,e;
+if(P=='month'){s=new Date(n.getFullYear(),n.getMonth(),1);e=new Date(n.getFullYear(),n.getMonth()+1,1)}
+else{const d=P=='date'&&window.repD?new Date(window.repD+'T00:00:00'):n;s=new Date(d.getFullYear(),d.getMonth(),d.getDate());e=new Date(s);e.setDate(e.getDate()+1)}return[+s,+e]}
+function repSet(p,d){window.repP=p;if(d)window.repD=d;report($('#app'))}
+function dueMsg(id){const j=J(id);wa(j,`Vanakkam ${j.name}, ungal ${j.model} (Job ${j.code}) ku ₹${bal(j)} baaki irukku. Seekiram vanthu settle pannunga. - ${set.shop}`)}
+function monthXl(){const n=new Date(),s=+new Date(n.getFullYear(),n.getMonth(),1),e=+new Date(n.getFullYear(),n.getMonth()+1,1);exp(j=>{const t=+new Date(j.date);return t>=s&&t<e},`GOWIN SERVICE REPORT ${MO[n.getMonth()]} ${n.getFullYear()}.xlsx`)}
+function report(a){const[s,e]=repRange(),P=window.repP||'today',inr=t=>t>=s&&t<e;
+const rec=jobs.filter(j=>inr(+new Date(j.date))),del=jobs.filter(j=>j.status=='Delivered'&&inr(j.outAt||+new Date(j.date)));
+const cs=new Set([...del,...rec.filter(j=>j.status!='Delivered')]);let cash=0,upi=0;cs.forEach(j=>{cash+=N(j.cash);upi+=N(j.upi)});
+const profit=del.reduce((t,j)=>t+grand(j)-N(j.disc)-N(j.spare),0),tot=(cash+upi)||1;
+const dues=jobs.filter(j=>(j.status=='Ready'||j.status=='Delivered')&&bal(j)>0),dsum=dues.reduce((t,j)=>t+bal(j),0);
+const box=(v,l,c)=>`<div style="background:var(--card);border:1px solid var(--bd);border-radius:4px;padding:10px 12px"><b style="display:block;font-size:20px;${c?'color:'+c:''}">${v}</b><span style="font-size:10.5px;letter-spacing:.8px;color:var(--mu)">${l}</span></div>`;
+a.innerHTML=`<div class="tabs">${[['today','Today'],['month','This month'],['date','Pick date']].map(x=>`<button class="${P==x[0]?'on':''}" onclick="repSet('${x[0]}')">${x[1]}</button>`).join('')}</div>
+${P=='date'?`<input type="date" value="${localDateInput(window.repD||Date.now())}" onchange="repSet('date',this.value)">`:''}
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">${box(rec.length,'JOBS RECEIVED')}${box(del.length,'DELIVERED')}${box('₹'+(cash+upi),'COLLECTED','var(--ok)')}${box('₹'+profit,'PROFIT','var(--ok)')}</div>
+<div class="card"><span class="cap">CASH VS UPI</span><div style="display:flex;height:6px;border-radius:3px;overflow:hidden;margin:8px 0"><div style="flex:${cash};background:var(--pr)"></div><div style="flex:${upi};background:var(--cy)"></div>${cash+upi?'':'<div style="flex:1;background:var(--bd2)"></div>'}</div><div class="tr"><span class="sm">Cash ₹${cash}</span><span class="sm">UPI ₹${upi}</span></div></div>
+<div class="card"><div class="tr"><span class="cap">PENDING DUES</span><b style="color:var(--pr)">₹${dsum}</b></div>${dues.map(j=>`<div class="tr" style="margin-top:8px"><span>${j.code} ${esc(j.name)}</span><span style="display:flex;gap:8px;align-items:center"><b style="color:var(--pr)">₹${bal(j)}</b><button class="w" style="width:auto;margin:0;padding:6px 10px" onclick="dueMsg(${j.id})">WA</button></span></div>`).join('')||'<p class="sm" style="margin:8px 0 0">Baaki illa.</p>'}</div>
+<button class="g" onclick="monthXl()">Download this month Excel</button><p class="sm">Payment: delivery date-la count aagum. Open job-la advance, receive date-la count aagum. Profit = Delivered jobs (total − discount − spare).</p>`}
 function pickTemp(model){window.tempQ=model;go('temp')}
 
 function heroH(){const c=s=>jobs.filter(j=>j.status==s).length;
@@ -143,16 +168,17 @@ function tk(j){const t=grand(j)-N(j.disc),b=bal(j),pd=N(j.cash)+N(j.upi),L=(j.st
 return `<div class="card tk" onclick="go('det',${j.id})"><div class="tb"><div class="jh"><b class="mono">${j.code}</b><span class="stt ${j.status}">[${SN[j.status]||j.status}]</span></div><div class="jn">${esc(j.name)} <span class="sm">${esc(j.phone)}</span></div><div class="sm">${esc(j.model)} – ${esc(j.problem)}${wdy(j)?' · 🛡️':''}</div></div><div class="ft"><b>${L}</b><span style="color:${RC}">${R}</span></div></div>`}
 function lres(){const H=j=>[j.name,j.phone,j.code,j.model,j.problem,j.imei].join(' ').toLowerCase(),k=q.trim().toLowerCase();
 let L=k?jobs.filter(j=>H(j).includes(k)):jobs.filter(j=>filt=='Active'?(j.status!='Delivered'&&j.status!='Giveup'):filt=='All'||j.status==filt);
-return (k?`<p class="sm">${L.length} match · ellaa jobs-layum thedudhu</p>`:'')+(L.map(j=>tk(j)).join('')||'<p class="sm">Jobs illa. ➕ New Job click pannunga.</p>')}
+const wr=k.length>=3?L.filter(j=>wdy(j)&&j.status=='Delivered'&&j.outAt).map(j=>{const e=new Date(j.outAt);e.setDate(e.getDate()+wdy(j));const d=Math.ceil((+e-Date.now())/864e5),ok=d>=0;return `<div class="card" style="border-color:${ok?'var(--ok)':'#5B2A2A'}"><div class="tr"><b style="color:${ok?'var(--ok)':'var(--er)'}">${ok?'IN WARRANTY':'WARRANTY OVER'}</b><span class="sm">${ok?d+' days left':'expired '+fd(e)}</span></div><div style="font-weight:600;margin:4px 0 2px">${esc(j.name)} · ${esc(j.model)}</div><div class="sm">${esc(j.part||'Part')} · ${wdy(j)} days · till ${fd(e)}</div></div>`}).join(''):'';
+return (k?`<p class="sm">${L.length} match · ellaa jobs-layum thedudhu</p>`:'')+wr+(L.map(j=>tk(j)).join('')||'<p class="sm">Jobs illa. ➕ New Job click pannunga.</p>')}
 function list(a){const p=pend();
 a.innerHTML=heroH()+(p.length?`<div class="alert">${p.length} mobile ${set.days}+ days-a customer edukala:<br>${p.map(j=>`<b>${j.code}</b> ${esc(j.name)}`).join(', ')}<br><button class="g" onclick="remindAll()">Reminder send</button></div>`:'')+
 `<label class="sb">$<input id="sq" placeholder="Name / phone / model / job code" autocomplete="off" value="${esc(q)}" oninput="q=this.value;$('#lr').innerHTML=lres()"></label><div class="tabs">${['Active','Received','Progress','Ready','Delivered','Giveup','All'].map(s=>`<button class="${s==filt?'on':''}" onclick="filt='${s}';list($('#app'))">${s=='Progress'?'In Prog':s}</button>`).join('')}</div><button class="g" onclick="exp()">Excel download (GOWIN SERVICE REPORT)</button>`+
 '<div id="lr">'+lres()+'</div>'}
 function remindAll(){const p=pend();if(!p.length)return;const j=p[0];wa(j,`Vanakkam ${j.name}, ungal ${j.model} (Job ${j.code}) ready-a irukku. Seekiram vanthu eduthukkonga. - ${set.shop}`);if(p.length>1)alert('Matha customers-ku job open panni send pannunga.')}
 function form(a){cur={photos:[],idp:[],sig:''};
-a.innerHTML=`<div class="card"><b class="st" style="font-size:14px">&gt; NEW_JOB</b><label>Customer name</label><input id="n"><label>Phone</label><input id="p" type="tel" maxlength="10">
+a.innerHTML=`<div class="card"><b class="st" style="font-size:14px">&gt; NEW_JOB</b><label>Customer name</label><input id="n"><label>Phone</label><input id="p" type="tel" maxlength="10" oninput="custHint(this.value)" autocomplete="off"><div id="ch"></div>
 <div class="row"><div><label>Category</label><select id="cat"><option>SERVICE</option><option>ACCESSORIES</option></select></div><div><label>IMEI (optional)</label><input id="imei"></div></div>
-<label>Model (Brand + Model)</label><input id="m"><label>Problem</label><textarea id="pr" rows="2"></textarea>
+<label>Model (Brand + Model)</label><input id="m"><div id="mch" style="display:flex;gap:6px;flex-wrap:wrap"></div><label>Problem</label><textarea id="pr" rows="2"></textarea>
 <label>Lock/Pattern (optional)</label><input id="lk">
 <div class="row"><div><label>Initial estimate ₹</label><input id="tt" type="number" min="0" placeholder="Approx. cost"></div><div><label>Advance amount ₹</label><input id="ad" type="number" min="0" value="0"></div></div><label>Advance payment mode</label><select id="ad_mode"><option value="cash">Cash</option><option value="upi">UPI</option></select><p class="sm">Estimate initial amount mattum. Repair mudinja piragu final service cost + additional work cost Billing-la enter pannunga.</p></div>
 <div class="card"><b>Physical condition ✔</b><div class="chk">${CK.map(c=>`<label><input type="checkbox" name="ck" value="${c}">${c}</label>`).join('')}</div>
@@ -327,12 +353,12 @@ async function pdf(id){
 }
 const desc=j=>[j.work||'',j.status=='Giveup'?`CANCELLED: ${j.giveReason||''} - ${j.giveRemark||''}`:'',j.tmp=='paid'?'+ TEMPER':'',...(j.acc||[]).map(x=>'+ '+x.n),wdy(j)?`(W ${wdy(j)} DAYS)`:''].filter(Boolean).join(' ');
 
-async function exp(){if(!window.XLSX)return;
+async function exp(f,nm){if(!window.XLSX)return;
 const H=['S.NO','DATE','JOB CODE','IMEI','CUSTOMER NAME','CONTACT NO','CATEGARY','MODEL','PROBLEM','PRICES','CASH','UPI','DISCOUNT','DESCRIPTION','STATUS','HANDOVER','SPARE','F'];
-const R=[...jobs].sort((a,b)=>a.date>b.date?1:-1).map((j,i)=>[i+1,fd(j.date),j.code,j.imei||'',U(j.name),j.phone,j.cat,U(j.model),U(j.problem),grand(j),N(j.cash),N(j.upi),dtxt(j),U(desc(j)),SN[j.status],j.outAt?fd(j.outAt):'',N(j.spare),grand(j)-N(j.disc)-N(j.spare)]);
+const R=[...jobs].filter(f||(()=>true)).sort((a,b)=>a.date>b.date?1:-1).map((j,i)=>[i+1,fd(j.date),j.code,j.imei||'',U(j.name),j.phone,j.cat,U(j.model),U(j.problem),grand(j),N(j.cash),N(j.upi),dtxt(j),U(desc(j)),SN[j.status],j.outAt?fd(j.outAt):'',N(j.spare),grand(j)-N(j.disc)-N(j.spare)]);
 const ws=XLSX.utils.aoa_to_sheet([H,...R]);ws['!cols']=[6,10,12,16,20,13,11,18,30,8,8,8,9,40,12,10,8,8].map(w=>({wch:w}));
 const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'SERVICE');
-const x=document.createElement('a');x.href=URL.createObjectURL(new Blob([XLSX.write(wb,{type:'array',bookType:'xlsx'})]));x.download='GOWIN SERVICE REPORT 2026.xlsx';x.click()}
+const x=document.createElement('a');x.href=URL.createObjectURL(new Blob([XLSX.write(wb,{type:'array',bookType:'xlsx'})]));x.download=nm||'GOWIN SERVICE REPORT 2026.xlsx';x.click()}
 async function imp(el){const f=el.files[0];if(!f)return;const wb=XLSX.read(await f.arrayBuffer(),{cellDates:true}),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
 const pd=v=>{if(v instanceof Date)return v.toISOString();const m=String(v).match(/(\d+)\/(\d+)\/(\d+)/);return m?new Date(2000+ +m[3],m[2]-1,+m[1],12).toISOString():new Date().toISOString()};
 const k=(r,a)=>{const x=Object.keys(r).find(c=>c.trim().toUpperCase()==a);return x?r[x]:''};
