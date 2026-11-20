@@ -124,17 +124,32 @@ function sendBtns(j,t){return `<div class="row"><button class="w" onclick="wa(J(
 function pend(){const n=Date.now();return jobs.filter(j=>j.status=='Ready'&&j.readyAt&&n-j.readyAt>set.days*864e5)}
 function render(){const a=$('#app');if(!ready)return;document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v==(view=='det'?'list':view)));$('#cnt').textContent=jobs.filter(j=>j.status!='Delivered'&&j.status!='Giveup').length+' OPEN';
 if(view=='list')return list(a);if(view=='new')return form(a);if(view=='det')return det(a);if(view=='rep')return report(a);if(view=='temp')return tempFinder(a);set_(a)}
-function tempFinder(a,keepFocus=false){
-const qv=(window.tempQ||'').trim().toUpperCase();
-const group=(window.tempG||'').trim();
-let R=qv?TEMP_MODELS.filter(x=>x.m.toUpperCase().includes(qv)):[];
-if(group)R=R.filter(x=>String(x.g)==group);
-const groups=[...new Set(R.map(x=>x.g))].sort((a,b)=>a-b);
-a.innerHTML=`<div class="card"><div class="tf"><b style="font-size:18px">🛡️ Temper</b><div class="tr"><span class="sm">${TEMP_MODELS.length} compatible entries · ${Object.keys(TEMP_GROUPS).length} groups</span></div><input id="tq" placeholder="🔍 Enter model e.g. VIVO Y200 / OPPO RENO 13" value="${esc(window.tempQ||'')}" oninput="window.tempQ=this.value;tempFinder($('#app'),true)"><select onchange="window.tempG=this.value;tempFinder($('#app'))"><option value="">All Groups</option>${Object.keys(TEMP_GROUPS).map(g=>`<option value="${g}" ${String(window.tempG||'')==g?'selected':''}>Group ${g}</option>`).join('')}</select></div></div>`+
-(qv?(groups.length?groups.map(g=>`<div class="card"><div class="tr"><b>GROUP ${g}</b><span class="tg">UNIVERSAL / SERIES ${g}</span></div><div class="sm">🛡️ ${esc(qv)} → இந்த tempered group</div></div>`).join(''):`<div class="card"><b>No matching group</b><p class="sm">இந்த model tempered list-ல் இல்லை.</p></div>`):`<div class="card"><b>Model enter pannunga</b><p class="sm">Model name type செய்தால் matching tempered group / universal series number மட்டும் காட்டப்படும்.</p></div>`);
-if(keepFocus){const e=$('#tq');if(e){const p=e.value.length;e.focus();try{e.setSelectionRange(p,p)}catch(_){}}}
-}
-
+const tn=s=>String(s).toLowerCase().replace(/[^a-z0-9+]/g,'');
+let cust=[];
+const allM=()=>TEMP_MODELS.concat(cust.map(x=>({g:+x.g,m:x.m,c:1})));
+const grpM=g=>[...(TEMP_GROUPS[g]||[]),...cust.filter(x=>+x.g==g).map(x=>x.m)];
+function tempRes(){const toks=(window.tempQ||'').toLowerCase().split(/\s+/).map(t=>t.replace(/[^a-z0-9+]/g,'')).filter(Boolean);
+if(!toks.length)return `<div class="card"><b>Model type pannunga</b><p class="sm">Space venaam (y200, realme9pro). Brand vitta kooda ok. Type pannina udane andha temper group-oda ellaa models-um kaattum.</p></div>`;
+const full=toks.join(''),G={};
+allM().forEach(x=>{const n=tn(x.m);if(toks.every(t=>n.includes(t))){const o=G[x.g]=G[x.g]||{g:+x.g,hit:[],best:0};if(!o.hit.includes(x.m))o.hit.push(x.m);o.best=Math.max(o.best,n==full?3:n.startsWith(full)?2:1)}});
+const R=Object.values(G).sort((a,b)=>b.best-a.best||b.hit.length-a.hit.length||a.g-b.g);
+if(!R.length)return `<div class="card"><b>Match illa</b><p class="sm">Intha model list-la illa. Vera spelling-la try pannunga (y200 mattum). Illana mela "+ Add model" click panni group-oda serkkalaam.</p></div>`;
+const lim=window.tMore?R.length:4,cm=new Set(cust.map(x=>x.m));
+return `<div class="sm" style="margin:2px 0 8px">${R.length} group-la irukku${R.length>1?' · mela irukkurathu nalla match':''}</div>`+R.slice(0,lim).map((o,i)=>{const all=grpM(o.g),hs=new Set(o.hit);
+return `<div class="card" style="${i==0?'border-color:var(--pr)':''}"><div class="tr" style="align-items:center"><span style="font-size:30px;font-weight:700;color:var(--pr);line-height:1">${o.g}</span><span class="sm" style="text-align:right">GROUP · ${all.length} models<br>same temper</span></div>
+<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px">${all.map(m=>hs.has(m)?`<span style="background:var(--pr);color:#1a1200;border-radius:4px;padding:4px 8px;font-size:13px;font-weight:600">${esc(m)}${cm.has(m)?` <a href="#" data-m="${esc(m)}" style="color:#7a1a1a" onclick="custDel(this.dataset.m);return false">x</a>`:''}</span>`:`<span style="border:1px solid var(--bd2);border-radius:4px;padding:4px 8px;font-size:12px;color:var(--mu)">${esc(m)}</span>`).join('')}</div></div>`}).join('')+(R.length>lim?`<button class="g" onclick="window.tMore=1;$('#tr').innerHTML=tempRes()">Innum ${R.length-lim} group kaattu</button>`:'')}
+function tempToggle(g){window.tOpen=window.tOpen==g?0:g;$('#tr').innerHTML=tempRes()}
+function tAddToggle(){window.tAdd=!window.tAdd;tAddForm()}
+function tAddForm(){const e=$('#ta');if(!e)return;e.innerHTML=window.tAdd?`<div class="card" style="border-color:var(--pr)"><b class="st">ADD MODEL</b><label>Model (Brand + Model)</label><input id="am" value="${esc((window.tempQ||'').toUpperCase())}" placeholder="VIVO Y400"><label>Group number</label><input id="ag" type="number" min="1" inputmode="numeric" placeholder="Supplier chart-la ulla number"><div class="row"><button class="w" onclick="custAdd()">Save model</button><button class="g" onclick="tAddToggle()">Cancel</button></div></div>`:''}
+async function saveCust(){await api(`${SH}${SID}/values/SETTINGS!A2?valueInputOption=RAW`,{method:'PUT',headers:JH,body:JSON.stringify({values:[[JSON.stringify(cust)]]})})}
+async function custAdd(){const m=U($('#am').value.trim()),g=Math.floor(+$('#ag').value);
+if(!m||!(g>0))return alert('Model name-um group number-um venum');
+if(grpM(g).some(x=>tn(x)==tn(m)))return alert('Intha model already group '+g+'-la irukku');
+if(!allM().some(x=>x.g==g)&&!confirm('Group '+g+' pudhu number. Sariyaa?'))return;
+cust.push({m,g});try{await saveCust()}catch(e){cust.pop();return alert('Save aagala: '+(e.message||e))}
+window.tAdd=false;window.tempQ=m;window.tOpen=g;tempFinder($('#app'))}
+async function custDel(m){if(!confirm(m+' remove pannalaamaa? (Ungal add panna entry mattum)'))return;const old=cust;cust=cust.filter(x=>x.m!=m);try{await saveCust()}catch(e){cust=old;return alert('Save aagala: '+(e.message||e))}window.tOpen=0;$('#tr').innerHTML=tempRes()}
+function tempFinder(a){const al=allM();a.innerHTML=`<div class="card"><b style="font-size:18px">🛡️ Temper</b><div class="sm">${al.length} models · ${new Set(al.map(x=>x.g)).size} groups · type pannina udane group-oda ellaa models-um kaattum</div><input id="tq" placeholder="Model e.g. y200 / realme 9 pro" autocomplete="off" value="${esc(window.tempQ||'')}" oninput="window.tempQ=this.value;window.tMore=0;$('#tr').innerHTML=tempRes()"><button class="g" onclick="tAddToggle()">+ Add model</button></div><div id="ta"></div><div id="tr">${tempRes()}</div>`;tAddForm();const e=$('#tq');if(e&&!window.tempQ&&!window.tAdd)e.focus()}
 
 function custList(d){const m={};if(d.length<4)return[];jobs.forEach(j=>{const p=String(j.phone||'');if(!p.startsWith(d))return;const o=m[p]=m[p]||{p,n:j.name,c:0,ms:[]};o.c++;if(j.model&&!o.ms.includes(j.model))o.ms.push(j.model)});return Object.values(m).sort((a,b)=>b.c-a.c).slice(0,3)}
 function chips(o){const e=$('#mch');if(e)e.innerHTML=o.ms.slice(0,4).map(m=>`<button class="g" type="button" style="width:auto;flex:none;margin:0 0 8px;padding:7px 10px" data-m="${esc(m)}" onclick="$('#m').value=this.dataset.m">${esc(m)}</button>`).join('')}
@@ -407,7 +422,7 @@ function delAcc(id,i){const j=J(id);billSnap(j);j.acc=j.acc.filter((_,k)=>k!=i);
 async function boot(){if(!SID){const q=encodeURIComponent("name='GOWIN SERVICE REPORT 2026' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false"),f=(await(await api(`${DR}?q=${q}&fields=files(id)`)).json()).files;
 if(f.length)SID=f[0].id;else{SID=(await(await api(SH.slice(0,-1),{method:'POST',headers:JH,body:JSON.stringify({properties:{title:'GOWIN SERVICE REPORT 2026'},sheets:[{properties:{title:'SERVICE'}},{properties:{title:'SETTINGS'}}]})})).json()).spreadsheetId;
 await api(`${SH}${SID}/values/SERVICE!A1:S1?valueInputOption=RAW`,{method:'PUT',headers:JH,body:JSON.stringify({values:[HDR]})})}localStorage.gm_sid=SID}
-try{const s=await(await api(`${SH}${SID}/values/SETTINGS!A1`)).json();if(s.values)set={...set,...JSON.parse(s.values[0][0])}}catch(e){}
+try{const s=await(await api(`${SH}${SID}/values/SETTINGS!A1:A2`)).json(),v=s.values||[];try{if(v[0]&&v[0][0])set={...set,...JSON.parse(v[0][0])}}catch(e){}try{if(v[1]&&v[1][0])cust=JSON.parse(v[1][0])||[]}catch(e){}}catch(e){}
 await loadAll();ready=true;render();setInterval(()=>loadAll().catch(()=>{}),20000);
 try{if(pend().length)Notification.requestPermission().then(p=>{if(p=='granted')new Notification('Gowin Mobiles',{body:pend().length+' mobile pending pickup'})})}catch(e){}}
 async function signin(){try{tc=google.accounts.oauth2.initTokenClient({client_id:CID(),scope:SCOPE,callback:()=>{}});await getToken();await boot()}catch(e){alert('Sign in failed: '+(e.message||e.error||e.type||'try again'))}}
